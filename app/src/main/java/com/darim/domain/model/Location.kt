@@ -1,5 +1,6 @@
 package com.darim.domain.model
 
+import java.io.Serializable
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -9,7 +10,7 @@ data class Location(
     val lat: Double,
     val lng: Double,
     val address: String
-) {
+) : Serializable {  // ← Добавляем Serializable
     fun distanceTo(other: Location): Double {
         val earthRadius = 6371.0 // km
         val dLat = Math.toRadians(other.lat - this.lat)
