@@ -21,33 +21,7 @@
 
 ---
 
-Структура проекта
-com.darim/
-│
-├── domain/ # Бизнес-логика и модели
-│ ├── model/ # Модели данных
-│ │ ├── Item.kt # Вещь (с телефоном продавца)
-│ │ ├── Location.kt # Координаты
-│ │ └── ItemStatus.kt # Статусы вещи
-│ └── repository/ # Интерфейсы репозиториев
-│ └── ItemRepository.kt
-│
-├── data/ # Слой данных
-│ └── repository/ # Реализации репозиториев
-│ ├── ItemRepositoryImpl.kt # Заглушки в памяти
-│ └── LocationRepositoryImpl.kt # Реальная геолокация
-│
-└── ui/ # Пользовательский интерфейс
-├── list/ # Экран со списком объявлений
-│ ├── ListFragment.kt
-│ ├── ListViewModel.kt
-│ └── ItemAdapter.kt
-├── detail/ # Экран деталей объявления
-│ └── DetailFragment.kt
-├── profile/ # Экран профиля
-│ └── ProfileFragment.kt
-└── utils/ # Вспомогательные классы
-└── UserLocationManager.kt
+
 
 
 
