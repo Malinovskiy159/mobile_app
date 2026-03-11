@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Верхняя панель с поиском и фильтром -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/white">
+
+        <!-- Строка поиска -->
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:iconifiedByDefault="false"
+            android:queryHint="Поиск по названию..."
+            app:searchIcon="@android:drawable/ic_menu_search" />
+
+        <!-- Кнопка фильтра -->
+        <ImageButton
+            android:id="@+id/filterButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:padding="12dp"
+            android:contentDescription="Фильтр" />
+
+    </LinearLayout>
+
+    <!-- Контейнер для фильтров (изначально скрыт) -->
+    <LinearLayout
+        android:id="@+id/filterContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#F5F5F5"
+        android:visibility="gone">
+
+        <!-- Заголовок -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Фильтры"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Категория -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Категория"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Категории -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/categoryChipGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleSelection="false"
+            app:selectionRequired="false"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipTech"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Техника"
+                style="@style/Widget.Material3.Chip.Filter" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipBooks"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Книги"
+                style="@style/Widget.Material3.Chip.Filter" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipClothes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Одежда"
+                style="@style/Widget.Material3.Chip.Filter" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFurniture"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Мебель"
+                style="@style/Widget.Material3.Chip.Filter" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipOther"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Другое"
+                style="@style/Widget.Material3.Chip.Filter" />
+
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Радиус поиска -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Радиус поиска"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Чекбокс "Весь город" -->
+        <CheckBox
+            android:id="@+id/wholeCityCheckBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Искать во всем городе"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Контейнер для выбора радиуса (виден только если чекбокс не выбран) -->
+        <LinearLayout
+            android:id="@+id/radiusContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <SeekBar
+                    android:id="@+id/radiusSeekBar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="50"
+                    android:progress="5" />
+
+                <TextView
+                    android:id="@+id/radiusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="5 км"
+                    android:layout_marginStart="8dp"
+                    android:minWidth="48dp"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0-50 км"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- Сортировка -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Сортировка"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp" />
+
+        <RadioGroup
+            android:id="@+id/sortRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/sortByDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="По дате"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/sortByDistance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="По расстоянию" />
+
+        </RadioGroup>
+
+        <!-- Кнопка применения -->
+        <Button
+            android:id="@+id/applyFilterButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Применить фильтры"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/purple_500" />
+
+    </LinearLayout>
+
+    <!-- Список объявлений -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+        <!-- Пустое состояние -->
+        <TextView
+            android:id="@+id/emptyView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Нет объявлений"
+            android:textSize="18sp"
+            android:visibility="gone"
+            android:layout_gravity="center" />
+
+    </FrameLayout>
+
+</LinearLayout>
