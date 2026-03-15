@@ -2,7 +2,6 @@
 package com.darim.data.repository
 
 import android.content.Context
-import com.darim.domain.model.ItemStatus
 import com.darim.domain.model.Review
 import com.darim.domain.model.User
 import com.darim.domain.repository.UserRepository
@@ -50,13 +49,7 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
         return@withContext try {
             val user = users.find { it.id == userId }
             user?.let {
-                // Рассчитываем новый средний рейтинг
-                val totalReviews = it.reviews.size
-                val currentTotal = it.rating * totalReviews
-                val newTotal = currentTotal + newRating
-                val newAverage = newTotal / (totalReviews + 1)
-
-                val updatedUser = it.copy(rating = newAverage)
+                val updatedUser = it.copy(rating = (it.rating + newRating) / 2)
                 val index = users.indexOfFirst { u -> u.id == userId }
                 users[index] = updatedUser
                 saveUsersToJson()
@@ -74,8 +67,7 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
                 val updatedReviews = it.reviews.toMutableList()
                 updatedReviews.add(review)
 
-                // Пересчитываем рейтинг на основе всех отзывов
-                val newRating = updatedReviews.map { r -> r.rating.toFloat() }.average().toFloat()
+                val newRating = updatedReviews.map { r -> r.rating }.average().toFloat()
 
                 val updatedUser = it.copy(
                     reviews = updatedReviews,
@@ -92,13 +84,9 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
         }
     }
 
-    /**
-     * Загружает пользователей из JSON файла
-     */
     private fun loadUsersFromJson(): List<User> {
         return try {
             if (!usersFile.exists()) {
-                // Если файл не существует, создаем начальные данные
                 return createInitialUsers()
             }
 
@@ -108,32 +96,22 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
             }
 
             val jsonArray = JSONArray(jsonString)
-            val usersList = mutableListOf<User>()
 
-            for (i in 0 until jsonArray.length()) {
+            (0 until jsonArray.length()).mapNotNull { index ->
                 try {
-                    val jsonObject = jsonArray.getJSONObject(i)
-                    val user = jsonToUser(jsonObject)
-                    usersList.add(user)
+                    val jsonObject = jsonArray.getJSONObject(index)
+                    jsonToUser(jsonObject)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    null
                 }
             }
-
-            if (usersList.isEmpty()) {
-                return createInitialUsers()
-            }
-
-            usersList
         } catch (e: Exception) {
             e.printStackTrace()
             createInitialUsers()
         }
     }
 
-    /**
-     * Создает начальные тестовые данные
-     */
     private fun createInitialUsers(): List<User> {
         val initialUsers = listOf(
             User(
@@ -141,26 +119,7 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
                 name = "Иван Петров",
                 phone = "+7 (999) 123-45-67",
                 rating = 4.8f,
-                reviews = listOf(
-                    Review(
-                        id = UUID.randomUUID().toString(),
-                        fromUserId = "user2",
-                        toUserId = "user1",
-                        rating = 5,
-                        comment = "Отличный человек! Все отдал вовремя.",
-                        date = System.currentTimeMillis() - 86400000,
-                        transferId = "transfer1"
-                    ),
-                    Review(
-                        id = UUID.randomUUID().toString(),
-                        fromUserId = "user3",
-                        toUserId = "user1",
-                        rating = 4,
-                        comment = "Хороший собеседник, но немного опоздал.",
-                        date = System.currentTimeMillis() - 172800000,
-                        transferId = "transfer2"
-                    )
-                ),
+                reviews = emptyList(),
                 itemsGiven = 5,
                 itemsTaken = 3
             ),
@@ -169,17 +128,7 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
                 name = "Мария Иванова",
                 phone = "+7 (999) 234-56-78",
                 rating = 4.9f,
-                reviews = listOf(
-                    Review(
-                        id = UUID.randomUUID().toString(),
-                        fromUserId = "user1",
-                        toUserId = "user2",
-                        rating = 5,
-                        comment = "Очень приятная девушка, вещи в отличном состоянии.",
-                        date = System.currentTimeMillis() - 259200000,
-                        transferId = "transfer3"
-                    )
-                ),
+                reviews = emptyList(),
                 itemsGiven = 8,
                 itemsTaken = 4
             ),
@@ -191,37 +140,13 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
                 reviews = emptyList(),
                 itemsGiven = 3,
                 itemsTaken = 2
-            ),
-            User(
-                id = "user4",
-                name = "Анна Смирнова",
-                phone = "+7 (999) 456-78-90",
-                rating = 5.0f,
-                reviews = listOf(
-                    Review(
-                        id = UUID.randomUUID().toString(),
-                        fromUserId = "user1",
-                        toUserId = "user4",
-                        rating = 5,
-                        comment = "Все отлично! Спасибо!",
-                        date = System.currentTimeMillis() - 43200000,
-                        transferId = "transfer4"
-                    )
-                ),
-                itemsGiven = 12,
-                itemsTaken = 6
             )
         )
 
-        // Сохраняем начальные данные в файл
         saveInitialUsersToJson(initialUsers)
-
         return initialUsers
     }
 
-    /**
-     * Сохраняет начальные данные в JSON файл
-     */
     private fun saveInitialUsersToJson(users: List<User>) {
         try {
             val jsonArray = JSONArray()
@@ -236,9 +161,6 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
         }
     }
 
-    /**
-     * Сохраняет текущий список пользователей в JSON файл
-     */
     private fun saveUsersToJson() {
         try {
             val jsonArray = JSONArray()
@@ -253,9 +175,6 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
         }
     }
 
-    /**
-     * Преобразует объект User в JSON
-     */
     private fun userToJson(user: User): JSONObject {
         return JSONObject().apply {
             put("id", user.id)
@@ -268,44 +187,36 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
             val reviewsArray = JSONArray()
             user.reviews.forEach { review ->
                 reviewsArray.put(JSONObject().apply {
-                    put("id", review.id)
+                    put("id", review.id)                          // ← добавляем id
                     put("fromUserId", review.fromUserId)
                     put("toUserId", review.toUserId)
                     put("rating", review.rating)
                     put("comment", review.comment)
                     put("date", review.date)
-                    if (review.transferId != null) {
-                        put("transferId", review.transferId)
-                    }
+                    put("transferId", review.transferId ?: JSONObject.NULL)  // ← добавляем transferId
                 })
             }
             put("reviews", reviewsArray)
         }
     }
 
-    /**
-     * Преобразует JSON в объект User
-     */
     private fun jsonToUser(json: JSONObject): User {
-        // Получаем массив отзывов
         val reviewsArray = json.optJSONArray("reviews") ?: JSONArray()
-        val reviews = mutableListOf<Review>()
-
-        for (i in 0 until reviewsArray.length()) {
+        val reviews = (0 until reviewsArray.length()).mapNotNull { index ->
             try {
-                val reviewJson = reviewsArray.getJSONObject(i)
-                val review = Review(
-                    id = reviewJson.optString("id", UUID.randomUUID().toString()),
+                val reviewJson = reviewsArray.getJSONObject(index)
+                Review(
+                    id = reviewJson.optString("id", UUID.randomUUID().toString()),  // ← генерируем id, если нет
                     fromUserId = reviewJson.getString("fromUserId"),
                     toUserId = reviewJson.getString("toUserId"),
                     rating = reviewJson.getInt("rating"),
                     comment = reviewJson.getString("comment"),
                     date = reviewJson.getLong("date"),
-                    transferId = reviewJson.getString("transferId")
+                    transferId = reviewJson.optString("transferId")
                 )
-                reviews.add(review)
             } catch (e: Exception) {
                 e.printStackTrace()
+                null
             }
         }
 
