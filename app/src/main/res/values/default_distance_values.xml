@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Массив предустановленных значений расстояния для фильтрации (в км) -->
+    <integer-array name="default_distance_values">
+        <item>1</item>   <!-- 1 км -->
+        <item>3</item>   <!-- 3 км -->
+        <item>5</item>   <!-- 5 км -->
+        <item>10</item>  <!-- 10 км -->
+        <item>15</item>  <!-- 15 км -->
+        <item>20</item>  <!-- 20 км -->
+        <item>30</item>  <!-- 30 км -->
+        <item>50</item>  <!-- 50 км -->
+    </integer-array>
+
+    <!-- Текстовое представление значений расстояния -->
+    <string-array name="default_distance_labels">
+        <item>1 км</item>
+        <item>3 км</item>
+        <item>5 км</item>
+        <item>10 км</item>
+        <item>15 км</item>
+        <item>20 км</item>
+        <item>30 км</item>
+        <item>50 км</item>
+    </string-array>
+
+    <!-- Значения расстояния по умолчанию для SeekBar (min, max, default) -->
+    <array name="default_distance_config">
+        <item>0</item>    <!-- min -->
+        <item>50</item>   <!-- max -->
+        <item>5</item>    <!-- default -->
+    </array>
+</resources>

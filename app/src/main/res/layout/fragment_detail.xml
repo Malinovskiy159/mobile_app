@@ -3,10 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/white">
+    android:background="@color/white"
+    android:orientation="vertical">
 
-    <!-- Кнопка назад -->
+    <!-- Тулбар -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -29,49 +29,137 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Фото (заглушка) -->
-            <ImageView
-                android:id="@+id/detailImageView"
+            <!-- Фото с ViewPager -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:scaleType="centerCrop"
-                android:background="#E0E0E0"
-                android:src="@android:drawable/ic_menu_gallery"
-                android:layout_marginBottom="16dp" />
+                android:layout_height="250dp"
+                android:layout_marginBottom="16dp">
 
-            <!-- Название -->
-            <TextView
-                android:id="@+id/detailTitle"
+                <!-- ViewPager для фотографий -->
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPagerPhotos"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- Индикатор точек -->
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/tabLayoutDots"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="8dp"
+                    app:tabBackground="@drawable/dot_indicator"
+                    app:tabGravity="center"
+                    app:tabIndicatorHeight="0dp"
+                    app:tabMaxWidth="12dp"
+                    app:tabMinWidth="12dp"
+                    app:tabPadding="0dp"
+                    app:tabSelectedTextColor="@android:color/transparent"
+                    app:tabTextColor="@android:color/transparent" />
+
+                <!-- Статус вещи -->
+                <TextView
+                    android:id="@+id/statusBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="12dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="4dp"
+                    android:text="Доступно"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="visible" />
+
+                <!-- Кнопка поделиться -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/buttonShare"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="8dp"
+                    android:src="@android:drawable/ic_menu_share"
+                    app:backgroundTint="@color/white"
+                    app:fabSize="mini"
+                    app:tint="@color/purple_500" />
+
+            </FrameLayout>
+
+            <!-- Название и статистика -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/detailTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Название вещи"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/viewsText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="16dp"
+                        android:drawablePadding="4dp"
+                        android:drawableStart="@android:drawable/ic_menu_view"
+                        android:text="0 просмотров"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/timeText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:drawablePadding="4dp"
+                        android:drawableStart="@android:drawable/ic_menu_recent_history"
+                        android:text="только что"
+                        android:textColor="#666666"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
             <!-- Категория -->
             <TextView
                 android:id="@+id/detailCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
+                android:layout_marginBottom="16dp"
+                android:background="#F0F0F0"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="Категория: Инструменты"
                 android:textColor="#666666"
-                android:layout_marginBottom="16dp" />
+                android:textSize="14sp" />
 
-            <!-- Блок продавца с телефоном -->
+            <!-- Блок продавца -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
                 android:background="#F5F5F5"
-                android:padding="12dp"
-                android:layout_marginBottom="16dp">
+                android:orientation="horizontal"
+                android:padding="12dp">
 
-                <ImageView
+                <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/sellerAvatar"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:src="@android:drawable/sym_def_app_icon"
-                    android:layout_marginEnd="12dp" />
+                    android:layout_marginEnd="12dp"
+                    android:src="@drawable/ic_default_avatar" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -83,19 +171,19 @@
                         android:id="@+id/sellerName"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:text="Продавец"
                         android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:text="Продавец" />
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/sellerPhone"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="14sp"
-                        android:textColor="@color/purple_500"
                         android:clickable="true"
                         android:focusable="true"
-                        android:text="+7 (999) 123-45-67" />
+                        android:text="+7 (999) 123-45-67"
+                        android:textColor="@color/purple_500"
+                        android:textSize="14sp" />
 
                 </LinearLayout>
 
@@ -105,45 +193,84 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="16dp"
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/detailLocation"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:drawablePadding="4dp"
+                    android:drawableStart="@android:drawable/ic_menu_compass"
+                    android:text="Москва, ул. Тверская, 1"
                     android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/detailDistance"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
+                    android:text="📍 1.2 км"
                     android:textColor="@color/purple_500"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
+
+            <!-- Яндекс Карта -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:text="Местоположение на карте"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_marginBottom="8dp"
+                android:background="#F0F0F0">
+
+                <com.yandex.mapkit.mapview.MapView
+                    android:id="@+id/mapView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </FrameLayout>
+
+            <!-- Кнопка открыть в картах -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonOpenMap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Открыть в Яндекс Картах"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                app:icon="@android:drawable/ic_dialog_map"
+                app:cornerRadius="8dp" />
 
             <!-- Описание -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
                 android:text="Описание"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp" />
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/detailDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
+                android:layout_marginBottom="24dp"
                 android:lineSpacingExtra="4dp"
-                android:layout_marginBottom="24dp" />
+                android:text="Подробное описание вещи..."
+                android:textSize="14sp" />
 
-            <!-- Пустой пространство для кнопок -->
+            <!-- Пустое пространство -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="80dp" />
@@ -152,37 +279,35 @@
 
     </androidx.core.widget.NestedScrollView>
 
-
-    <!-- Кнопки (фиксированные внизу) -->
+    <!-- Кнопки внизу -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp"
         android:background="@color/white"
-        android:elevation="8dp">
+        android:elevation="8dp"
+        android:orientation="horizontal"
+        android:padding="16dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/bookButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:text="Заберу"
             android:textSize="16sp"
-            app:cornerRadius="8dp"
-            android:layout_marginEnd="8dp"
-            app:backgroundTint="@color/purple_500" />
+            app:backgroundTint="@color/purple_500"
+            app:cornerRadius="8dp" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/favoriteButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@android:drawable/btn_star_big_off"
             android:contentDescription="В избранное"
+            android:src="@android:drawable/btn_star_big_off"
             app:backgroundTint="#E0E0E0"
             app:fabSize="normal" />
 
     </LinearLayout>
-
 
 </LinearLayout>

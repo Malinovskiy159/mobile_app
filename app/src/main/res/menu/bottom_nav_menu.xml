@@ -3,27 +3,27 @@
 
     <item
         android:id="@+id/navigation_list"
-        android:icon="@android:drawable/ic_menu_gallery"
+        android:icon="@drawable/ic_list"
         android:title="Объявления" />
 
     <item
-        android:id="@+id/navigation_favorites"
-        android:icon="@android:drawable/ic_menu_edit"
-        android:title="Избранное" />
+        android:id="@+id/navigation_map"
+        android:icon="@drawable/ic_map"
+        android:title="Карта" />
 
     <item
         android:id="@+id/navigation_add"
-        android:icon="@android:drawable/ic_menu_add"
+        android:icon="@drawable/ic_add"
         android:title="Добавить" />
 
     <item
-        android:id="@+id/navigation_messages"
-        android:icon="@android:drawable/ic_menu_send"
-        android:title="Сообщения" />
+        android:id="@+id/navigation_myitems"
+        android:icon="@drawable/ic_folder"
+        android:title="Мои вещи" />
 
     <item
         android:id="@+id/navigation_profile"
-        android:icon="@android:drawable/ic_menu_manage"
+        android:icon="@drawable/ic_profile"
         android:title="Профиль" />
 
 </menu>

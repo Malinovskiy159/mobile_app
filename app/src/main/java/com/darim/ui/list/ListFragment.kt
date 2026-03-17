@@ -1,3 +1,4 @@
+// ui/list/ListFragment.kt
 package com.darim.ui.list
 
 import android.Manifest
@@ -10,7 +11,7 @@ import android.widget.*
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,6 +21,7 @@ import com.darim.domain.model.Item
 import com.darim.domain.model.ItemStatus
 import com.darim.domain.model.Location
 import com.darim.ui.detail.DetailFragment
+import com.darim.ui.shared.FilterViewModel
 import com.darim.ui.utils.UserLocationManager
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -40,13 +42,14 @@ class ListFragment : Fragment() {
     private lateinit var applyFilterButton: Button
     private lateinit var emptyView: TextView
     private lateinit var sortRadioGroup: RadioGroup
+    private lateinit var clearFiltersButton: Button
 
-    private val viewModel: ListViewModel by viewModels()
+    private val filterViewModel: FilterViewModel by activityViewModels()
     private val locationRepository by lazy {
         LocationRepositoryImpl(requireContext())
     }
 
-    // Исходные данные с номерами телефонов в каждом item
+    // Исходные данные
     private val allItems = listOf(
         Item(
             id = "1",
@@ -56,7 +59,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7558, 37.6176, "м. Охотный ряд"),
             ownerId = "user1",
-            phone = "+7 (999) 123-45-67",
+            ownerName = "Иван Петров",
+            ownerPhone = "+7 (999) 123-45-67",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 86400000
         ),
@@ -68,7 +72,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7512, 37.6289, "м. Китай-город"),
             ownerId = "user2",
-            phone = "+7 (999) 234-56-78",
+            ownerName = "Мария Иванова",
+            ownerPhone = "+7 (999) 234-56-78",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 172800000
         ),
@@ -80,7 +85,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7602, 37.6195, "м. Лубянка"),
             ownerId = "user1",
-            phone = "+7 (999) 123-45-67",
+            ownerName = "Иван Петров",
+            ownerPhone = "+7 (999) 123-45-67",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 43200000
         ),
@@ -92,7 +98,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7587, 37.6153, "м. Театральная"),
             ownerId = "user3",
-            phone = "+7 (999) 345-67-89",
+            ownerName = "Петр Сидоров",
+            ownerPhone = "+7 (999) 345-67-89",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis()
         ),
@@ -104,7 +111,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7492, 37.6215, "м. Лубянка"),
             ownerId = "user4",
-            phone = "+7 (999) 456-78-90",
+            ownerName = "Анна Смирнова",
+            ownerPhone = "+7 (999) 456-78-90",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 259200000
         ),
@@ -116,7 +124,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7634, 37.6102, "м. Охотный ряд"),
             ownerId = "user5",
-            phone = "+7 (999) 567-89-01",
+            ownerName = "Дмитрий Козлов",
+            ownerPhone = "+7 (999) 567-89-01",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 43200000
         ),
@@ -128,7 +137,8 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7523, 37.6251, "м. Китай-город"),
             ownerId = "user2",
-            phone = "+7 (999) 234-56-78",
+            ownerName = "Мария Иванова",
+            ownerPhone = "+7 (999) 234-56-78",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 604800000
         ),
@@ -140,13 +150,13 @@ class ListFragment : Fragment() {
             photos = emptyList(),
             location = Location(55.7578, 37.6123, "м. Театральная"),
             ownerId = "user6",
-            phone = "+7 (999) 678-90-12",
+            ownerName = "Елена Новикова",
+            ownerPhone = "+7 (999) 678-90-12",
             status = ItemStatus.AVAILABLE,
             createdAt = System.currentTimeMillis() - 86400000
         )
     )
 
-    // Отфильтрованные данные
     private var filteredItems = allItems.toList()
 
     override fun onCreateView(
@@ -181,14 +191,12 @@ class ListFragment : Fragment() {
         }
 
         lifecycleScope.launch {
-            UserLocationManager.userLocation.collect { location ->
+            UserLocationManager.userLocation.observe(viewLifecycleOwner) { location ->
                 applyFilters()
             }
         }
 
         checkLocationPermission()
-
-        // Восстанавливаем состояние UI из ViewModel
         restoreUiState()
     }
 
@@ -205,33 +213,33 @@ class ListFragment : Fragment() {
         applyFilterButton = view.findViewById(R.id.applyFilterButton)
         emptyView = view.findViewById(R.id.emptyView)
         sortRadioGroup = view.findViewById(R.id.sortRadioGroup)
+        clearFiltersButton = view.findViewById(R.id.clearFiltersButton)
 
         recyclerView.layoutManager = GridLayoutManager(requireContext(), 2)
     }
 
     private fun setupObservers() {
-        // Наблюдаем за изменениями в ViewModel
-        viewModel.searchQuery.observe(viewLifecycleOwner) { query ->
+        filterViewModel.searchQuery.observe(viewLifecycleOwner) { query ->
             if (searchView.query.toString() != query) {
                 searchView.setQuery(query, false)
             }
         }
 
-        viewModel.selectedCategories.observe(viewLifecycleOwner) { categories ->
+        filterViewModel.selectedCategories.observe(viewLifecycleOwner) { categories ->
             updateChipSelection(categories)
         }
 
-        viewModel.radius.observe(viewLifecycleOwner) { radius ->
+        filterViewModel.radius.observe(viewLifecycleOwner) { radius ->
             radiusSeekBar.progress = radius.toInt()
             radiusText.text = "$radius км"
         }
 
-        viewModel.isWholeCity.observe(viewLifecycleOwner) { isChecked ->
+        filterViewModel.isWholeCity.observe(viewLifecycleOwner) { isChecked ->
             wholeCityCheckBox.isChecked = isChecked
             radiusContainer.visibility = if (isChecked) View.GONE else View.VISIBLE
         }
 
-        viewModel.sortType.observe(viewLifecycleOwner) { sortType ->
+        filterViewModel.sortType.observe(viewLifecycleOwner) { sortType ->
             when (sortType) {
                 "distance" -> sortRadioGroup.check(R.id.sortByDistance)
                 else -> sortRadioGroup.check(R.id.sortByDate)
@@ -240,12 +248,9 @@ class ListFragment : Fragment() {
     }
 
     private fun restoreUiState() {
-        // Восстанавливаем чипсы
-        viewModel.selectedCategories.value?.let { categories ->
+        filterViewModel.selectedCategories.value?.let { categories ->
             updateChipSelection(categories)
         }
-
-        // Применяем фильтры с сохраненным состоянием
         applyFilters()
     }
 
@@ -260,7 +265,7 @@ class ListFragment : Fragment() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean = false
             override fun onQueryTextChange(newText: String?): Boolean {
-                viewModel.updateSearchQuery(newText ?: "")
+                filterViewModel.updateSearchQuery(newText ?: "")
                 applyFilters()
                 return true
             }
@@ -268,49 +273,50 @@ class ListFragment : Fragment() {
     }
 
     private fun setupFilterViews() {
-        // Кнопка фильтра - показывает/скрывает панель фильтров
         filterButton.setOnClickListener {
             filterContainer.visibility = if (filterContainer.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
 
-        // SeekBar для радиуса
         radiusSeekBar.max = 50
-        radiusSeekBar.progress = viewModel.radius.value?.toInt() ?: 5
+        radiusSeekBar.progress = filterViewModel.radius.value?.toInt() ?: 5
 
         radiusSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    viewModel.updateRadius(progress.toDouble())
+                    filterViewModel.updateRadius(progress.toDouble())
+                    radiusText.text = "$progress км"
                 }
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Обработка чекбокса "Весь город"
         wholeCityCheckBox.setOnCheckedChangeListener { _, isChecked ->
-            viewModel.updateWholeCity(isChecked)
+            filterViewModel.updateWholeCity(isChecked)
         }
 
-        // Обработка выбора сортировки
         sortRadioGroup.setOnCheckedChangeListener { _, checkedId ->
             val sortType = when (checkedId) {
                 R.id.sortByDistance -> "distance"
                 else -> "date"
             }
-            viewModel.updateSortType(sortType)
+            filterViewModel.updateSortType(sortType)
             applyFilters()
         }
 
-        // Категории - динамически из allItems
         setupCategoryChips()
 
-        // Кнопка применения фильтров
         applyFilterButton.setOnClickListener {
             val selectedCats = collectSelectedCategories()
-            viewModel.updateCategories(selectedCats)
+            filterViewModel.updateCategories(selectedCats)
             applyFilters()
             filterContainer.visibility = View.GONE
+        }
+
+        clearFiltersButton.setOnClickListener {
+            filterViewModel.clearFilters()
+            clearChipSelection()
+            applyFilters()
         }
     }
 
@@ -325,6 +331,13 @@ class ListFragment : Fragment() {
                 isClickable = true
             }
             categoryChipGroup.addView(chip)
+        }
+    }
+
+    private fun clearChipSelection() {
+        for (i in 0 until categoryChipGroup.childCount) {
+            val chip = categoryChipGroup.getChildAt(i) as? Chip
+            chip?.isChecked = false
         }
     }
 
@@ -354,7 +367,7 @@ class ListFragment : Fragment() {
         var result = allItems
 
         // 1. Поиск по тексту
-        val searchQuery = viewModel.searchQuery.value ?: ""
+        val searchQuery = filterViewModel.searchQuery.value ?: ""
         if (searchQuery.isNotEmpty()) {
             result = result.filter { item ->
                 item.title.lowercase().contains(searchQuery.lowercase()) ||
@@ -363,18 +376,21 @@ class ListFragment : Fragment() {
         }
 
         // 2. Фильтр по категориям
-        val categories = viewModel.selectedCategories.value ?: emptySet()
+        val categories = filterViewModel.selectedCategories.value ?: emptySet()
         if (categories.isNotEmpty()) {
             result = result.filter { item ->
                 item.category in categories
             }
         }
 
-        // 3. Фильтр по расстоянию
-        val userLocation = UserLocationManager.userLocation.value
+        // 3. Фильтр по статусу (только AVAILABLE)
+        result = result.filter { it.status == ItemStatus.AVAILABLE }
+
+        // 4. Фильтр по расстоянию
+        val userLocation = UserLocationManager.getLastKnownLocation()
         if (userLocation != null) {
-            if (!viewModel.isWholeCity.value!!) {
-                val radius = viewModel.radius.value ?: 5.0
+            if (!filterViewModel.isWholeCity.value!!) {
+                val radius = filterViewModel.radius.value ?: 5.0
                 result = result.filter { item ->
                     val distance = userLocation.distanceTo(item.location)
                     distance <= radius
@@ -382,7 +398,7 @@ class ListFragment : Fragment() {
             }
 
             // Сортировка
-            when (viewModel.sortType.value) {
+            when (filterViewModel.sortType.value) {
                 "distance" -> {
                     result = result.sortedBy { item ->
                         userLocation.distanceTo(item.location)
@@ -396,6 +412,9 @@ class ListFragment : Fragment() {
 
         filteredItems = result
         adapter.updateItems(filteredItems)
+
+        // Сохраняем отфильтрованные items в shared ViewModel для карты
+        filterViewModel.updateFilteredItems(filteredItems)
 
         emptyView.visibility = if (filteredItems.isEmpty()) View.VISIBLE else View.GONE
         recyclerView.visibility = if (filteredItems.isEmpty()) View.GONE else View.VISIBLE
@@ -414,7 +433,10 @@ class ListFragment : Fragment() {
 
     private fun getUserLocation() {
         lifecycleScope.launch {
-            locationRepository.getCurrentLocation()
+            val location = locationRepository.getCurrentLocation()
+            location?.let {
+                UserLocationManager.updateLocation(it)
+            }
         }
     }
 

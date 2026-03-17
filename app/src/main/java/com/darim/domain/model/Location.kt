@@ -1,3 +1,5 @@
+package com.darim.domain.model
+
 import java.io.Serializable
 import kotlin.math.atan2
 import kotlin.math.cos
