@@ -5,7 +5,7 @@ import com.darim.domain.model.Item
 import com.darim.domain.model.ItemStatus
 
 interface ItemRepository {
-    suspend fun getItems(filters: Filters?): List<Item>
+    suspend fun getItems(filters: String? = null): List<Item>
 
     suspend fun getItemById(id: String): Item?
 
