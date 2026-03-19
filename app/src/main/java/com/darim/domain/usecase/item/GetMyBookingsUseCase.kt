@@ -35,6 +35,23 @@ class GetMyBookingsUseCase(
         NO_SHOW         // Владелец не пришел
     }
 
+    // ДОБАВЛЯЕМ КЛАСС BookingStats
+    data class BookingStats(
+        val total: Int,
+        val active: Int,
+        val scheduled: Int,
+        val completed: Int,
+        val cancelled: Int,
+        val noShow: Int
+    ) {
+        val activeBookings: Int
+            get() = active + scheduled
+
+        fun getSummary(): String {
+            return "Всего: $total | ✅ Активных: $activeBookings | 🎉 Завершено: $completed | ❌ Отменено: $cancelled"
+        }
+    }
+
     sealed class BookingsResult {
         data class Success(val bookings: List<BookingItem>) : BookingsResult()
         data class Error(val message: String) : BookingsResult()
@@ -44,8 +61,8 @@ class GetMyBookingsUseCase(
 
     sealed class BookingsFilter {
         object All : BookingsFilter()
-        object Active : BookingsFilter()      // Активные брони
-        object Upcoming : BookingsFilter()    // Предстоящие встречи
+        object Active : BookingsFilter()      // Активные брони (ACTIVE + SCHEDULED)
+        object Upcoming : BookingsFilter()    // Предстоящие встречи (только SCHEDULED)
         object Completed : BookingsFilter()   // Завершенные
         object Cancelled : BookingsFilter()   // Отмененные
     }
@@ -58,7 +75,6 @@ class GetMyBookingsUseCase(
             emit(BookingsResult.Loading)
 
             try {
-                // Получаем все вещи, которые забронировал пользователь
                 val bookedItems = itemRepository.getMyBookings(userId)
 
                 if (bookedItems.isEmpty()) {
@@ -69,10 +85,8 @@ class GetMyBookingsUseCase(
                 val bookings = mutableListOf<BookingItem>()
 
                 bookedItems.forEach { item ->
-                    // Получаем информацию о владельце
                     val owner = userRepository.getUser(item.ownerId)
 
-                    // Получаем информацию о встрече
                     val transfers = transferRepository.getTransfersForItem(item.id)
                     val activeTransfer = transfers.firstOrNull {
                         it.status == TransferStatus.SCHEDULED
@@ -92,7 +106,6 @@ class GetMyBookingsUseCase(
                     bookings.add(bookingItem)
                 }
 
-                // Применяем фильтр
                 val filteredBookings = when (filter) {
                     is BookingsFilter.All -> bookings
                     is BookingsFilter.Active -> bookings.filter {
@@ -110,10 +123,13 @@ class GetMyBookingsUseCase(
                     }
                 }
 
-                // Сортируем по дате бронирования (сначала новые)
                 val sortedBookings = filteredBookings.sortedByDescending { it.bookingDate }
 
-                emit(BookingsResult.Success(sortedBookings))
+                if (sortedBookings.isEmpty()) {
+                    emit(BookingsResult.Empty)
+                } else {
+                    emit(BookingsResult.Success(sortedBookings))
+                }
             } catch (e: Exception) {
                 emit(BookingsResult.Error(e.message ?: "Ошибка загрузки броней"))
             }
@@ -142,7 +158,6 @@ class GetMyBookingsUseCase(
             try {
                 val result = execute(userId, BookingsFilter.Upcoming)
                 // В реальном коде нужно обработать LiveData правильно
-                // Для упрощения возвращаем пустой список
                 emit(emptyList())
             } catch (e: Exception) {
                 emit(emptyList())
@@ -150,28 +165,52 @@ class GetMyBookingsUseCase(
         }
     }
 
+    // ИСПРАВЛЕННЫЙ МЕТОД getBookingStats
     fun getBookingStats(userId: String): LiveData<BookingStats> {
         return liveData(Dispatchers.IO) {
             try {
                 val bookedItems = itemRepository.getMyBookings(userId)
 
+                var active = 0
+                var scheduled = 0
+                var completed = 0
+                var cancelled = 0
+                var noShow = 0
+
+                bookedItems.forEach { item ->
+                    val transfers = transferRepository.getTransfersForItem(item.id)
+                    val activeTransfer = transfers.firstOrNull {
+                        it.status == TransferStatus.SCHEDULED
+                    }
+
+                    when {
+                        item.status == ItemStatus.COMPLETED -> completed++
+                        item.status == ItemStatus.CANCELLED -> cancelled++
+                        activeTransfer != null -> {
+                            when (activeTransfer.status) {
+                                TransferStatus.SCHEDULED -> scheduled++
+                                TransferStatus.COMPLETED -> completed++
+                                TransferStatus.CANCELLED -> cancelled++
+                                TransferStatus.NO_SHOW -> noShow++
+                            }
+                        }
+                        item.status == ItemStatus.BOOKED -> active++
+                        else -> cancelled++
+                    }
+                }
+
                 val stats = BookingStats(
                     total = bookedItems.size,
-                    active = bookedItems.count { it.status == ItemStatus.BOOKED },
-                    completed = bookedItems.count { it.status == ItemStatus.COMPLETED },
-                    cancelled = bookedItems.count { it.status == ItemStatus.CANCELLED }
+                    active = active,
+                    scheduled = scheduled,
+                    completed = completed,
+                    cancelled = cancelled,
+                    noShow = noShow
                 )
                 emit(stats)
             } catch (e: Exception) {
-                emit(BookingStats(0, 0, 0, 0))
+                emit(BookingStats(0, 0, 0, 0, 0, 0))
             }
         }
     }
 }
-
-data class BookingStats(
-    val total: Int,
-    val active: Int,
-    val completed: Int,
-    val cancelled: Int
-)

@@ -93,6 +93,19 @@ class MyApplication : Application() {
         GetUserLocationUseCase(locationRepository)
     }
 
+    val getUserProfileUseCase: GetUserProfileUseCase by lazy {
+        GetUserProfileUseCase(userRepository, itemRepository)
+    }
+    // Auth
+
+    val loginUseCase: LoginUseCase by lazy {
+        LoginUseCase(userRepository)
+    }
+
+    val registerUseCase: RegisterUseCase by lazy {
+        RegisterUseCase(userRepository)
+    }
+
     // ============== ИНИЦИАЛИЗАЦИЯ ==============
 
     override fun onCreate() {

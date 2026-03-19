@@ -18,12 +18,13 @@ import com.darim.MyApplication
 import com.darim.ui.list.ListFragment
 import com.darim.ui.map.MapFragment
 import com.darim.ui.myitems.MyItemsFragment
+import com.darim.ui.profile.LoginFragment
 import com.darim.ui.profile.ProfileFragment
 import com.darim.ui.publish.PublishFragment
-import com.darim.ui.publish.PublishViewModelFactory
 import com.darim.ui.utils.UserLocationManager
 import com.darim.ui.utils.SessionManager
 import com.darim.ui.publish.PublishViewModel
+import com.darim.ui.utils.ViewModelFactory
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
@@ -42,9 +43,9 @@ class MainActivity : AppCompatActivity() {
         application as MyApplication
     }
 
-    // Инициализируем PublishViewModel с фабрикой
-    private val publishViewModel: PublishViewModel by lazy {
-        ViewModelProvider(this, PublishViewModelFactory(app.publishItemUseCase))[PublishViewModel::class.java]
+    // Создаем фабрику ViewModel
+    val viewModelFactory by lazy {
+        ViewModelFactory(app)
     }
 
     companion object {
@@ -59,12 +60,28 @@ class MainActivity : AppCompatActivity() {
 
         bottomNavigationView = binding.bottomNavigationView
 
+        // Инициализируем SessionManager
+        SessionManager.init(this)
+
+        // Проверяем, залогинен ли пользователь
         if (savedInstanceState == null) {
-            loadFragment(ListFragment(), addToBackStack = false)
+            if (SessionManager.isLoggedIn()) {
+                loadFragment(ListFragment(), addToBackStack = false)
+            } else {
+                loadFragment(LoginFragment(), addToBackStack = false)
+            }
         }
 
         checkLocationPermission()
 
+        setupBottomNavigation()
+
+        supportFragmentManager.addOnBackStackChangedListener {
+            updateBottomNavigationSelection()
+        }
+    }
+
+    private fun setupBottomNavigation() {
         bottomNavigationView.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.navigation_list -> {
@@ -76,25 +93,33 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.navigation_add -> {
-                    // Создаем PublishFragment и передаем ему ViewModel
-                    val fragment = PublishFragment.newInstance(publishViewModel)
-                    loadFragment(fragment, addToBackStack = true)
+                    if (SessionManager.isLoggedIn()) {
+                        loadFragment(PublishFragment(), addToBackStack = true)
+                    } else {
+                        Toast.makeText(this, "Войдите, чтобы добавить объявление", Toast.LENGTH_SHORT).show()
+                        loadFragment(LoginFragment(), addToBackStack = true)
+                    }
                     true
                 }
                 R.id.navigation_myitems -> {
-                    loadFragment(MyItemsFragment(), addToBackStack = false)
+                    if (SessionManager.isLoggedIn()) {
+                        loadFragment(MyItemsFragment(), addToBackStack = false)
+                    } else {
+                        Toast.makeText(this, "Войдите, чтобы увидеть свои вещи", Toast.LENGTH_SHORT).show()
+                        loadFragment(LoginFragment(), addToBackStack = true)
+                    }
                     true
                 }
                 R.id.navigation_profile -> {
-                    loadFragment(ProfileFragment(), addToBackStack = false)
+                    if (SessionManager.isLoggedIn()) {
+                        loadFragment(ProfileFragment(), addToBackStack = false)
+                    } else {
+                        loadFragment(LoginFragment(), addToBackStack = true)
+                    }
                     true
                 }
                 else -> false
             }
-        }
-
-        supportFragmentManager.addOnBackStackChangedListener {
-            updateBottomNavigationSelection()
         }
     }
 
@@ -216,11 +241,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    fun getCurrentUserId(): String {
-        return SessionManager.getCurrentUserId() ?: "user1"
-    }
-
-    fun getCurrentUser(): com.darim.domain.model.User? {
-        return SessionManager.getCurrentUser()
-    }
+    @JvmName("getViewModelFactoryProvider")
+    fun getViewModelFactory(): ViewModelFactory = viewModelFactory
 }

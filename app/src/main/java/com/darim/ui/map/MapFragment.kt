@@ -1,11 +1,8 @@
 // ui/map/MapFragment.kt
 package com.darim.ui.map
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -18,7 +15,6 @@ import androidx.fragment.app.activityViewModels
 import com.darim.R
 import com.darim.databinding.FragmentMapBinding
 import com.darim.domain.model.Item
-import com.darim.domain.model.ItemStatus
 import com.darim.ui.detail.DetailFragment
 import com.darim.ui.shared.FilterViewModel
 import com.darim.ui.utils.UserLocationManager
@@ -271,7 +267,7 @@ class MapFragment : Fragment() {
     }
 
     private fun openDetailFragment(item: Item) {
-        val fragment = DetailFragment.newInstance(item)
+        val fragment = DetailFragment.newInstance(item.id)
         parentFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)

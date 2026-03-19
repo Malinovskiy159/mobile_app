@@ -26,8 +26,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.darim.R
 import com.darim.databinding.FragmentPublishBinding
 import com.darim.domain.model.Location
+import com.darim.ui.MainActivity
+import com.darim.ui.utils.SessionManager
 import com.darim.ui.utils.UserLocationManager
-import com.darim.ui.publish.PublishViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import java.io.File
@@ -41,10 +42,10 @@ class PublishFragment : Fragment() {
     private val binding get() = _binding!!
     private val TAG = "PublishFragment"
 
-    // Получаем ViewModel через activityViewModels() чтобы разделять с MainActivity
-    private val viewModel: PublishViewModel by viewModels(
-        ownerProducer = { requireActivity() }
-    )
+    // Получаем ViewModel через фабрику из MainActivity
+    private val viewModel: PublishViewModel by viewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
 
     private val categories = listOf(
         "Техника", "Книги", "Одежда", "Мебель",
@@ -347,6 +348,21 @@ class PublishFragment : Fragment() {
             return
         }
 
+        // Получаем текущего пользователя из сессии
+        val currentUser = SessionManager.getCurrentUser()
+
+        /*viewModel.publishItem(
+            title = title,
+            category = category,
+            description = description,
+            location = location,
+            ownerId = currentUser?.id ?: "guest",
+            ownerName = currentUser?.name ?: "Гость",
+            ownerPhone = currentUser?.phone ?: "+7 (999) 000-00-00",
+            photoUris = selectedImageUris,
+            photoFiles = selectedImageFiles
+        )*/
+
         viewModel.publishItem(
             title = title,
             category = category,
@@ -393,7 +409,7 @@ class PublishFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance(viewModel: PublishViewModel): PublishFragment {
+        fun newInstance(): PublishFragment {
             return PublishFragment()
         }
     }

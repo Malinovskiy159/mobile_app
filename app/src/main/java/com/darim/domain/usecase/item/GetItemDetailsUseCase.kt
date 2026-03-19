@@ -4,6 +4,7 @@ package com.darim.domain.usecase.item
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
 import com.darim.domain.model.Item
+import com.darim.domain.model.ItemStatus
 import com.darim.domain.model.Review
 import com.darim.domain.model.User
 import com.darim.domain.repository.ItemRepository
@@ -21,8 +22,7 @@ class GetItemDetailsUseCase(
             val item: Item,
             val owner: User?,
             val canBook: Boolean,
-            val isOwner: Boolean,
-            val similarItems: List<Item> = emptyList()
+            val isOwner: Boolean
         ) : DetailResult()
 
         data class Error(val message: String, val code: ErrorCode) : DetailResult()
@@ -51,37 +51,30 @@ class GetItemDetailsUseCase(
      * @param itemId ID вещи
      * @param currentUserId ID текущего пользователя (для проверки прав)
      */
+    // domain/usecase/item/GetItemDetailsUseCase.kt
     fun execute(itemId: String, currentUserId: String? = null): LiveData<DetailResult> {
         return liveData(Dispatchers.IO) {
             emit(DetailResult.Loading)
 
             try {
-                // 1. Получаем вещь по ID
                 val item = itemRepository.getItemById(itemId)
                 if (item == null) {
                     emit(DetailResult.NotFound)
                     return@liveData
                 }
 
-                // 2. Увеличиваем счетчик просмотров
-                //itemRepository.incrementItemViews(itemId)
+                itemRepository.incrementItemViews(itemId)
 
-                // 3. Получаем информацию о владельце
                 val owner = userRepository.getUser(item.ownerId)
 
-                // 4. Проверяем, может ли текущий пользователь забронировать
                 val canBook = when {
                     currentUserId == null -> false
                     currentUserId == item.ownerId -> false
-                    item.status != com.darim.domain.model.ItemStatus.AVAILABLE -> false
+                    item.status != ItemStatus.AVAILABLE -> false
                     else -> true
                 }
 
-                // 5. Проверяем, является ли текущий пользователь владельцем
                 val isOwner = currentUserId == item.ownerId
-
-                // 6. Получаем похожие вещи (из той же категории)
-                //val similarItems = getSimilarItems(item)
 
                 emit(DetailResult.Success(
                     item = item,
@@ -123,7 +116,6 @@ class GetItemDetailsUseCase(
                 }
 
                 val isOwner = currentUserId == item.ownerId
-                //val similarItems = getSimilarItems(item)
 
                 emit(ItemDetails(
                     item = item,

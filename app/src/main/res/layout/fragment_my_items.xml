@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
     android:orientation="vertical">
 
-    <!-- Заголовок -->
+    <!-- Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/purple_500"
         app:title="Мои вещи"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@android:color/white"
+        app:navigationIcon="@android:drawable/ic_menu_revert" />
 
-    <!-- SwipeRefreshLayout -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
@@ -32,15 +33,19 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="16dp"
-                android:text="📊 Загрузка..."
+                android:text="Всего: 0 | ✅ 0 | 📌 0 | 🎉 0 | ❌ 0"
                 android:textColor="#666666"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:background="@color/white"
+                android:layout_marginBottom="8dp"
+                tools:text="Всего: 15 | ✅ 8 | 📌 3 | 🎉 3 | ❌ 1" />
 
-            <!-- Вкладки -->
+            <!-- TabLayout для переключения между списками -->
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tabLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@color/white"
                 app:tabGravity="fill"
                 app:tabIndicatorColor="@color/purple_500"
                 app:tabSelectedTextColor="@color/purple_500"
@@ -49,41 +54,128 @@
                 <com.google.android.material.tabs.TabItem
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Мои публикации" />
+                    android:text="Мои вещи" />
 
                 <com.google.android.material.tabs.TabItem
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Я забронировал" />
+                    android:text="Мои брони" />
 
             </com.google.android.material.tabs.TabLayout>
 
-            <!-- Список моих публикаций -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerPublished"
+            <!-- Контейнер для списков -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="8dp"
-                android:visibility="gone" />
+                android:layout_height="match_parent">
 
-            <!-- Список моих броней -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerBooked"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="8dp"
-                android:visibility="gone" />
+                <!-- Список моих вещей -->
+                <LinearLayout
+                    android:id="@+id/layoutMyItems"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:visibility="visible">
 
-            <!-- Пустое состояние -->
-            <TextView
-                android:id="@+id/emptyView"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="У вас пока нет вещей"
-                android:textColor="#999999"
-                android:textSize="16sp"
-                android:visibility="gone" />
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerMyItems"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="8dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="vertical" />
+
+                    <!-- Пустое состояние для моих вещей -->
+                    <LinearLayout
+                        android:id="@+id/emptyMyItems"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:src="@drawable/ic_empty"
+                            android:tint="#CCCCCC" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="У вас пока нет своих вещей"
+                            android:textColor="#999999"
+                            android:textSize="16sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/buttonAddFirstItem"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Добавить вещь"
+                            app:cornerRadius="20dp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Список моих броней -->
+                <LinearLayout
+                    android:id="@+id/layoutMyBookings"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerMyBookings"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="8dp"
+                        android:clipToPadding="false"
+                        android:scrollbars="vertical" />
+
+                    <!-- Пустое состояние для броней -->
+                    <LinearLayout
+                        android:id="@+id/emptyMyBookings"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:src="@drawable/ic_empty"
+                            android:tint="#CCCCCC" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="У вас пока нет забронированных вещей"
+                            android:textColor="#999999"
+                            android:textSize="16sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+            <!-- Кнопки фильтров -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/buttonFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:src="@drawable/ic_filter"
+                android:visibility="visible"
+                app:backgroundTint="@color/purple_500"
+                app:tint="@android:color/white"
+                app:fabSize="normal" />
 
         </LinearLayout>
 
