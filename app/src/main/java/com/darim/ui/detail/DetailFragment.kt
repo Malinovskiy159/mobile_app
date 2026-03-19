@@ -204,11 +204,64 @@ class DetailFragment : Fragment() {
         // Настраиваем карту
         setupMap(item.location)
 
-        // Обновляем кнопку
-        updateButtonForStatus(item.status)
+        // Обновляем кнопку в зависимости от владельца
+        updateButtonForUser(item)
 
         // Проверяем, не в избранном ли вещь
         checkIfFavorite(item.id)
+    }
+
+    private fun updateButtonForUser(item: Item) {
+        val currentUserId = getCurrentUserId()
+        val isOwner = item.ownerId == currentUserId
+
+        when {
+            isOwner -> {
+                // Это моя вещь - показываем другие кнопки
+                binding.bookButton.visibility = View.GONE
+                binding.ownerActions.visibility = View.VISIBLE
+                binding.editButton.visibility = View.VISIBLE
+                binding.deleteButton.visibility = View.VISIBLE
+            }
+            item.status == ItemStatus.AVAILABLE -> {
+                // Чужая доступная вещь
+                binding.bookButton.visibility = View.VISIBLE
+                binding.bookButton.isEnabled = true
+                binding.bookButton.text = "Заберу"
+                binding.ownerActions.visibility = View.GONE
+            }
+            item.status == ItemStatus.BOOKED && item.bookedBy == currentUserId -> {
+                // Я забронировал эту вещь
+                binding.bookButton.visibility = View.VISIBLE
+                binding.bookButton.isEnabled = true
+                binding.bookButton.text = "Управление бронированием"
+                binding.ownerActions.visibility = View.GONE
+            }
+            else -> {
+                // Вещь недоступна
+                binding.bookButton.visibility = View.VISIBLE
+                binding.bookButton.isEnabled = false
+                binding.bookButton.text = "Уже забрали"
+                binding.ownerActions.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun showBookingConfirmationDialog(item: Item) {
+        // Дополнительная проверка перед диалогом
+        if (item.ownerId == getCurrentUserId()) {
+            Toast.makeText(requireContext(), "Вы не можете забронировать свою вещь", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Подтверждение бронирования")
+            .setMessage("Вы уверены, что хотите забрать эту вещь?")
+            .setPositiveButton("Да, забрать") { _, _ ->
+                confirmBooking(item)
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 
     private fun loadItemPhotos(item: Item) {
@@ -321,17 +374,6 @@ class DetailFragment : Fragment() {
             }
             startActivity(Intent.createChooser(shareIntent, "Поделиться через"))
         }
-    }
-
-    private fun showBookingConfirmationDialog(item: Item) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Подтверждение бронирования")
-            .setMessage("Вы уверены, что хотите забрать эту вещь?")
-            .setPositiveButton("Да, забрать") { _, _ ->
-                confirmBooking(item)
-            }
-            .setNegativeButton("Отмена", null)
-            .show()
     }
 
     private fun showManageBookingDialog(item: Item) {
