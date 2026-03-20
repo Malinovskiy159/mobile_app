@@ -1,3 +1,4 @@
+// ui/profile/ProfileFragment.kt
 package com.darim.ui.profile
 
 import android.content.Intent
@@ -10,7 +11,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.darim.R
 import com.darim.databinding.FragmentProfileBinding
-import com.darim.ui.MainActivity
 import com.darim.ui.list.ListFragment
 import com.darim.ui.myitems.MyItemsFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -20,7 +20,7 @@ class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
 
-    // Временные данные пользователя (модель вынесена вниз файла)
+    // Временные данные пользователя
     private val user = User(
         id = "user1",
         name = "Иван Петров",
@@ -31,7 +31,7 @@ class ProfileFragment : Fragment() {
         itemsGiven = 15,
         itemsTaken = 8,
         registeredDate = "Март 2023",
-        avatar = null
+        avatar = null // будет использована заглушка
     )
 
     override fun onCreateView(
@@ -55,7 +55,7 @@ class ProfileFragment : Fragment() {
 
     private fun setupToolbar() {
         binding.toolbar.title = "Профиль"
-        binding.toolbar.setNavigationIcon(null)
+        binding.toolbar.setNavigationIcon(null) // Убираем кнопку назад, так как это главный экран
     }
 
     private fun setupListeners() {
@@ -110,25 +110,35 @@ class ProfileFragment : Fragment() {
             navigateToMyBookings()
         }
 
-        //  Избранное
+        // Избранное
         binding.menuFavorites.setOnClickListener {
-            val favoritesFragment = ListFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("showOnlyFavorites", true)
-                }
-            }
-            // Вызываем метод загрузки фрагмента из MainActivity
-            (activity as? MainActivity)?.loadFragment(favoritesFragment, true)
+            showComingSoon("Избранное")
         }
 
-        binding.menuSettings.setOnClickListener { showSettingsDialog() }
-        binding.menuHelp.setOnClickListener { showHelpDialog() }
-        binding.menuAbout.setOnClickListener { showAboutDialog() }
-        binding.menuLogout.setOnClickListener { showLogoutDialog() }
+        // Настройки
+        binding.menuSettings.setOnClickListener {
+            showSettingsDialog()
+        }
+
+        // Помощь
+        binding.menuHelp.setOnClickListener {
+            showHelpDialog()
+        }
+
+        // О приложении
+        binding.menuAbout.setOnClickListener {
+            showAboutDialog()
+        }
+
+        // Выйти
+        binding.menuLogout.setOnClickListener {
+            showLogoutDialog()
+        }
     }
 
     private fun showEditProfileDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
+
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Редактировать профиль")
             .setView(dialogView)
@@ -141,12 +151,13 @@ class ProfileFragment : Fragment() {
 
     private fun showChangeAvatarDialog() {
         val options = arrayOf("Сделать фото", "Выбрать из галереи", "Удалить фото")
+
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Изменить фото")
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> Toast.makeText(requireContext(), "Камера недоступна", Toast.LENGTH_SHORT).show()
-                    1 -> Toast.makeText(requireContext(), "Галерея недоступна", Toast.LENGTH_SHORT).show()
+                    0 -> Toast.makeText(requireContext(), "Открыть камеру", Toast.LENGTH_SHORT).show()
+                    1 -> Toast.makeText(requireContext(), "Открыть галерею", Toast.LENGTH_SHORT).show()
                     2 -> Toast.makeText(requireContext(), "Фото удалено", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -156,7 +167,7 @@ class ProfileFragment : Fragment() {
     private fun showSettingsDialog() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Настройки")
-            .setMessage("Раздел в разработке")
+            .setMessage("Здесь будут настройки приложения")
             .setPositiveButton("OK", null)
             .show()
     }
@@ -164,15 +175,21 @@ class ProfileFragment : Fragment() {
     private fun showHelpDialog() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Помощь")
-            .setMessage("Напишите нам: support@darim.ru")
-            .setPositiveButton("OK", null)
+            .setMessage("Если у вас возникли вопросы, напишите нам:\nsupport@darim.ru")
+            .setPositiveButton("Написать") { _, _ ->
+                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("mailto:support@darim.ru")
+                }
+                startActivity(intent)
+            }
+            .setNegativeButton("Закрыть", null)
             .show()
     }
 
     private fun showAboutDialog() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("О приложении")
-            .setMessage("Darim v1.0.0\nПриложение для обмена вещами.")
+            .setMessage("Darim v1.0.0\n\nПриложение для безвозмездной передачи вещей")
             .setPositiveButton("OK", null)
             .show()
     }
@@ -180,16 +197,27 @@ class ProfileFragment : Fragment() {
     private fun showLogoutDialog() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Выход")
-            .setMessage("Вы уверены, что хотите выйти из аккаунта?")
+            .setMessage("Вы уверены, что хотите выйти?")
             .setPositiveButton("Выйти") { _, _ ->
-                Toast.makeText(requireContext(), "Выход выполнен", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Выход из аккаунта", Toast.LENGTH_SHORT).show()
+                // Здесь логика выхода
             }
             .setNegativeButton("Отмена", null)
             .show()
     }
 
     private fun showStatsDialog() {
-        val stats = "Отдано: ${user.itemsGiven}\nПолучено: ${user.itemsTaken}\nРейтинг: ${user.rating} ★"
+        val stats = """
+            📊 Статистика:
+            
+            Отдано вещей: ${user.itemsGiven}
+            Получено вещей: ${user.itemsTaken}
+            Рейтинг: ${user.rating} ★
+            Отзывов: ${user.reviewsCount}
+            
+            На платформе с ${user.registeredDate}
+        """.trimIndent()
+
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Моя статистика")
             .setMessage(stats)
@@ -197,13 +225,24 @@ class ProfileFragment : Fragment() {
             .show()
     }
 
+    private fun showComingSoon(feature: String) {
+        Toast.makeText(requireContext(), "$feature — скоро появится!", Toast.LENGTH_SHORT).show()
+    }
+
     private fun navigateToMyItems() {
-        (activity as? MainActivity)?.loadFragment(MyItemsFragment(), true)
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, MyItemsFragment())
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun navigateToMyBookings() {
-        // Открываем тот же экран управления вещами
-        (activity as? MainActivity)?.loadFragment(MyItemsFragment(), true)
+        // Показываем MyItemsFragment с открытой вкладкой броней
+        val fragment = MyItemsFragment()
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     override fun onDestroyView() {
@@ -211,7 +250,7 @@ class ProfileFragment : Fragment() {
         _binding = null
     }
 
-    // Модель данных пользователя
+    // Временная модель данных
     data class User(
         val id: String,
         val name: String,
