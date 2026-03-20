@@ -1,11 +1,11 @@
-// ui/list/ListViewModel.kt
-package com.darim.ui.list
+// ui/map/MapViewModel.kt
+package com.darim.ui.map
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.darim.domain.model.Filters
 import com.darim.domain.model.Item
 import com.darim.domain.model.ItemStatus
 import com.darim.domain.model.Location
@@ -14,12 +14,14 @@ import com.darim.domain.usecase.location.GetUserLocationUseCase
 import com.darim.ui.utils.SessionManager
 import kotlinx.coroutines.launch
 
-class ListViewModel(
+class MapViewModel(
     private val getItemsUseCase: GetItemsUseCase,
     private val getUserLocationUseCase: GetUserLocationUseCase
 ) : ViewModel() {
 
-    // Все доступные вещи из репозитория
+    private val TAG = "MapViewModel"
+
+    // Все доступные вещи для карты
     private val _allItems = MutableLiveData<List<Item>>(emptyList())
     val allItems: LiveData<List<Item>> = _allItems
 
@@ -27,33 +29,13 @@ class ListViewModel(
     private val _filteredItems = MutableLiveData<List<Item>>(emptyList())
     val filteredItems: LiveData<List<Item>> = _filteredItems
 
-    // Текущие фильтры
-    private val _filters = MutableLiveData(Filters())
-    val filters: LiveData<Filters> = _filters
-
-    // Поисковый запрос
-    private val _searchQuery = MutableLiveData("")
-    val searchQuery: LiveData<String> = _searchQuery
-
-    // Выбранные категории
-    private val _selectedCategories = MutableLiveData<Set<String>>(emptySet())
-    val selectedCategories: LiveData<Set<String>> = _selectedCategories
-
-    // Радиус поиска
-    private val _radius = MutableLiveData(5.0)
-    val radius: LiveData<Double> = _radius
-
-    // Весь город
-    private val _isWholeCity = MutableLiveData(true)
-    val isWholeCity: LiveData<Boolean> = _isWholeCity
-
-    // Тип сортировки
-    private val _sortType = MutableLiveData("distance")
-    val sortType: LiveData<String> = _sortType
-
     // Местоположение пользователя
     private val _userLocation = MutableLiveData<Location?>()
     val userLocation: LiveData<Location?> = _userLocation
+
+    // Выбранная вещь
+    private val _selectedItemId = MutableLiveData<String?>()
+    val selectedItemId: LiveData<String?> = _selectedItemId
 
     // Состояние загрузки
     private val _isLoading = MutableLiveData(false)
@@ -63,6 +45,26 @@ class ListViewModel(
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
+    // Состояние геолокации
+    private val _locationState = MutableLiveData<LocationState>(LocationState.Idle)
+    val locationState: LiveData<LocationState> = _locationState
+
+    // Текущие фильтры
+    private var currentSearchQuery = ""
+    private var currentCategories = emptySet<String>()
+    private var currentRadius = 5.0
+    private var currentIsWholeCity = false
+    private var currentSortType = "date"
+
+    sealed class LocationState {
+        object Idle : LocationState()
+        object Available : LocationState()
+        object Disabled : LocationState()
+        object PermissionDenied : LocationState()
+        object Loading : LocationState()
+        data class Error(val message: String) : LocationState()
+    }
+
     init {
         loadAllItems()
         loadUserLocation()
@@ -71,13 +73,16 @@ class ListViewModel(
     fun loadAllItems() {
         viewModelScope.launch {
             _isLoading.value = true
+            Log.d(TAG, "Loading all items...")
             try {
                 getItemsUseCase.getAvailableItems().observeForever { items ->
+                    Log.d(TAG, "Loaded ${items.size} items")
                     _allItems.value = items
                     applyFilters()
                     _isLoading.value = false
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Error loading items: ${e.message}")
                 _error.value = e.message
                 _isLoading.value = false
             }
@@ -86,14 +91,29 @@ class ListViewModel(
 
     fun loadUserLocation() {
         viewModelScope.launch {
+            _locationState.value = LocationState.Loading
             getUserLocationUseCase.execute().observeForever { result ->
                 when (result) {
                     is GetUserLocationUseCase.LocationResult.Success -> {
                         _userLocation.value = result.location
+                        _locationState.value = LocationState.Available
+                        Log.d(TAG, "User location: ${result.location.lat}, ${result.location.lng}")
+                        applyFilters()
+                    }
+                    is GetUserLocationUseCase.LocationResult.LocationDisabled -> {
+                        _locationState.value = LocationState.Disabled
+                        Log.d(TAG, "Location disabled")
+                        applyFilters()
+                    }
+                    is GetUserLocationUseCase.LocationResult.PermissionDenied -> {
+                        _locationState.value = LocationState.PermissionDenied
+                        Log.d(TAG, "Location permission denied")
                         applyFilters()
                     }
                     is GetUserLocationUseCase.LocationResult.Error -> {
-                        _error.value = result.message
+                        _locationState.value = LocationState.Error(result.message)
+                        Log.e(TAG, "Location error: ${result.message}")
+                        applyFilters()
                     }
                     else -> {}
                 }
@@ -101,108 +121,101 @@ class ListViewModel(
         }
     }
 
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
+    fun updateFilters(
+        searchQuery: String = "",
+        categories: Set<String> = emptySet(),
+        radius: Double = 5.0,
+        isWholeCity: Boolean = false,
+        sortType: String = "date"
+    ) {
+        currentSearchQuery = searchQuery
+        currentCategories = categories
+        currentRadius = radius
+        currentIsWholeCity = isWholeCity
+        currentSortType = sortType
         applyFilters()
     }
 
-    fun updateCategories(categories: Set<String>) {
-        _selectedCategories.value = categories
-        applyFilters()
+    fun refresh() {
+        loadAllItems()
+        loadUserLocation()
     }
 
-    fun updateRadius(radius: Double) {
-        _radius.value = radius
-        applyFilters()
+    fun onMarkerClick(itemId: String) {
+        _selectedItemId.value = itemId
     }
 
-    fun updateWholeCity(isChecked: Boolean) {
-        _isWholeCity.value = isChecked
-        applyFilters()
+    fun clearSelectedItem() {
+        _selectedItemId.value = null
     }
 
-    fun updateSortType(sortType: String) {
-        _sortType.value = sortType
-        applyFilters()
-    }
-
-    fun clearFilters() {
-        _searchQuery.value = ""
-        _selectedCategories.value = emptySet()
-        _radius.value = 5.0
-        _isWholeCity.value = false
-        _sortType.value = "date"
-        applyFilters()
+    fun clearError() {
+        _error.value = null
     }
 
     private fun applyFilters() {
-        val all = _allItems.value ?: return
+        val all = _allItems.value ?: run {
+            Log.d(TAG, "applyFilters: allItems is null")
+            _filteredItems.value = emptyList()
+            return
+        }
+
         val userLoc = _userLocation.value
         val currentUserId = SessionManager.getCurrentUserId()
         val bookedItemIds = SessionManager.getBookedItems()
 
+        Log.d(TAG, "applyFilters: total items: ${all.size}")
+        Log.d(TAG, "applyFilters: user location: ${userLoc != null}")
+        Log.d(TAG, "applyFilters: currentUserId: $currentUserId")
+        Log.d(TAG, "applyFilters: booked items: ${bookedItemIds.size}")
+
         var result = all
 
         // 1. Поиск по тексту
-        val query = _searchQuery.value ?: ""
-        if (query.isNotEmpty()) {
+        if (currentSearchQuery.isNotEmpty()) {
             result = result.filter { item ->
-                item.title.contains(query, ignoreCase = true) ||
-                        item.description.contains(query, ignoreCase = true)
+                item.title.contains(currentSearchQuery, ignoreCase = true) ||
+                        item.description.contains(currentSearchQuery, ignoreCase = true)
             }
+            Log.d(TAG, "After search filter: ${result.size}")
         }
 
         // 2. Фильтр по категориям
-        val categories = _selectedCategories.value ?: emptySet()
-        if (categories.isNotEmpty()) {
+        if (currentCategories.isNotEmpty()) {
             result = result.filter { item ->
-                item.category in categories
+                item.category in currentCategories
             }
+            Log.d(TAG, "After category filter: ${result.size}")
         }
 
         // 3. Только доступные вещи
         result = result.filter { it.status == ItemStatus.AVAILABLE }
+        Log.d(TAG, "After status filter: ${result.size}")
 
         // 4. Исключаем свои вещи
         if (currentUserId != null) {
             result = result.filter { it.ownerId != currentUserId }
+            Log.d(TAG, "After exclude owner filter: ${result.size}")
         }
 
         // 5. Исключаем уже забронированные вещи
         result = result.filter { it.id !in bookedItemIds }
+        Log.d(TAG, "After exclude booked filter: ${result.size}")
 
         // 6. Фильтр по расстоянию
-        if (userLoc != null && _isWholeCity.value == false) {
-            val radius = _radius.value ?: 5.0
+        if (userLoc != null && !currentIsWholeCity) {
             result = result.filter { item ->
                 val distance = calculateDistance(
                     userLoc.lat, userLoc.lng,
                     item.location.lat, item.location.lng
                 )
-                distance <= radius
+                distance <= currentRadius
             }
-        }
-
-        // 7. Сортировка
-        result = when (_sortType.value) {
-            "distance" -> {
-                if (userLoc != null) {
-                    result.sortedBy { item ->
-                        calculateDistance(
-                            userLoc.lat, userLoc.lng,
-                            item.location.lat, item.location.lng
-                        )
-                    }
-                } else {
-                    result.sortedByDescending { it.createdAt }
-                }
-            }
-            else -> {
-                result.sortedByDescending { it.createdAt }
-            }
+            Log.d(TAG, "After distance filter: ${result.size}")
         }
 
         _filteredItems.value = result
+        Log.d(TAG, "Final filtered items: ${result.size}")
     }
 
     private fun calculateDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
@@ -214,14 +227,5 @@ class ListViewModel(
                 Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2)
         val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
         return R * c
-    }
-
-    fun refresh() {
-        loadAllItems()
-        loadUserLocation()
-    }
-
-    fun clearError() {
-        _error.value = null
     }
 }

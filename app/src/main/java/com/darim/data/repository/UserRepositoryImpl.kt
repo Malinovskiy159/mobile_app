@@ -230,4 +230,12 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
             itemsTaken = json.optInt("itemsTaken", 0)
         )
     }
+
+    override suspend fun getAllUsers(): List<User> = withContext(Dispatchers.IO) {
+        return@withContext users.toList()
+    }
+
+    override suspend fun findUserByPhone(phone: String): User? = withContext(Dispatchers.IO) {
+        return@withContext users.find { it.phone == phone }
+    }
 }

@@ -20,7 +20,7 @@
         android:background="@drawable/bg_filter_info"
         android:paddingHorizontal="16dp"
         android:paddingVertical="8dp"
-        android:text="Найдено: 8 объявлений"
+        android:text="Найдено: 0 объявлений"
         android:textColor="@android:color/white"
         android:textSize="14sp"
         android:visibility="visible" />

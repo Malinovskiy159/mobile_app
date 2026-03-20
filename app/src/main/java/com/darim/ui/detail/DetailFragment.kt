@@ -5,28 +5,30 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
 import com.darim.R
 import com.darim.databinding.FragmentDetailBinding
 import com.darim.domain.model.Item
 import com.darim.domain.model.ItemStatus
 import com.darim.domain.model.Location
+import com.darim.ui.MainActivity
 import com.darim.ui.utils.PhotoManager
+import com.darim.ui.utils.SessionManager
 import com.darim.ui.utils.UserLocationManager
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.darim.ui.detail.DetailViewModel
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -34,16 +36,25 @@ import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.IconStyle
 import com.yandex.mapkit.mapview.MapView
 import com.yandex.runtime.image.ImageProvider
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.*
 
 class DetailFragment : Fragment() {
 
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
+    private val TAG = "DetailFragment"
+
+    private val viewModel: DetailViewModel by viewModels {
+        (requireActivity() as MainActivity).viewModelFactory
+    }
 
     private lateinit var photoAdapter: PhotoPagerAdapter
     private var currentItem: Item? = null
-    private var isFavorite = false
+    private var currentItemId: String? = null
+    private var currentUserId: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,27 +68,27 @@ class DetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Инициализируем MapKit
+        // Инициализация
         MapKitFactory.initialize(requireContext())
+        currentUserId = SessionManager.getCurrentUserId()
 
         initViews()
         setupViewPager()
         setupToolbar()
         setupListeners()
+        setupObservers()
         loadItemData()
     }
 
     private fun initViews() {
-        // Инициализация адаптера для фото
         photoAdapter = PhotoPagerAdapter()
     }
 
     private fun setupViewPager() {
         binding.viewPagerPhotos.adapter = photoAdapter
 
-        // Индикатор страниц (точки)
         TabLayoutMediator(binding.tabLayoutDots, binding.viewPagerPhotos) { tab, position ->
-            // Просто точки, без текста
+            // Точки без текста
         }.attach()
     }
 
@@ -90,16 +101,10 @@ class DetailFragment : Fragment() {
     private fun setupListeners() {
         binding.bookButton.setOnClickListener {
             currentItem?.let { item ->
-                when {
-                    item.status == ItemStatus.AVAILABLE -> {
-                        showBookingConfirmationDialog(item)
-                    }
-                    item.status == ItemStatus.BOOKED && item.bookedBy == getCurrentUserId() -> {
-                        showManageBookingDialog(item)
-                    }
-                    else -> {
-                        Toast.makeText(requireContext(), "Эта вещь уже недоступна", Toast.LENGTH_SHORT).show()
-                    }
+                if (viewModel.canBook.value == true) {
+                    showBookingConfirmationDialog(item)
+                } else {
+                    Toast.makeText(requireContext(), "Вы не можете забронировать эту вещь", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -127,6 +132,174 @@ class DetailFragment : Fragment() {
         binding.buttonShare.setOnClickListener {
             shareItem()
         }
+
+        binding.editButton.setOnClickListener {
+            currentItem?.let { item ->
+                Toast.makeText(requireContext(), "Редактирование: ${item.title}", Toast.LENGTH_SHORT).show()
+                // TODO: Open edit screen
+            }
+        }
+
+        binding.deleteButton.setOnClickListener {
+            currentItem?.let { item ->
+                showDeleteConfirmationDialog(item)
+            }
+        }
+
+        binding.buttonRetry.setOnClickListener {
+            loadItemData()
+        }
+    }
+
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Наблюдаем за данными вещи
+                viewModel.item.observeForever { item ->
+                    item?.let {
+                        currentItem = it
+                        displayItemDetails(it)
+                        hideError()
+                    }
+                }
+
+                // Наблюдаем за владельцем
+                viewModel.owner.observeForever { owner ->
+                    owner?.let {
+                        displayOwnerInfo(it)
+                    }
+                }
+
+                // Наблюдаем за возможностью бронирования
+                viewModel.canBook.observeForever { canBook ->
+                    updateBookButton(canBook)
+                }
+
+                // Наблюдаем за статусом владельца
+                viewModel.isOwner.observeForever { isOwner ->
+                    if (isOwner) {
+                        binding.bookButton.visibility = View.GONE
+                        binding.ownerActions.visibility = View.VISIBLE
+                    } else {
+                        binding.ownerActions.visibility = View.GONE
+                        binding.bookButton.visibility = View.VISIBLE
+                    }
+                }
+
+                // Наблюдаем за состоянием загрузки
+                viewModel.isLoading.observeForever { isLoading ->
+                    if (isLoading) {
+                        binding.progressBar.visibility = View.VISIBLE
+                        binding.contentLayout.visibility = View.GONE
+                        binding.errorLayout.visibility = View.GONE
+                    } else {
+                        binding.progressBar.visibility = View.GONE
+                    }
+                }
+
+                // Наблюдаем за ошибками
+                viewModel.error.observeForever { error ->
+                    error?.let {
+                        showError(it)
+                        viewModel.clearError()
+                    }
+                }
+
+                // Наблюдаем за результатом бронирования
+                viewModel.bookingResult.observeForever { result ->
+                    when (result) {
+                        is DetailViewModel.BookingResult.Success -> {
+                            Toast.makeText(requireContext(), result.message, Toast.LENGTH_LONG).show()
+                            viewModel.clearBookingResult()
+                            // Обновляем данные после бронирования
+                            currentItemId?.let { id ->
+                                viewModel.loadItemDetails(id, currentUserId)
+                            }
+                        }
+                        is DetailViewModel.BookingResult.Error -> {
+                            Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show()
+                            viewModel.clearBookingResult()
+                        }
+                        null -> {}
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadItemData() {
+        // Получаем itemId из аргументов
+        currentItemId = arguments?.getString("itemId")
+
+        if (currentItemId != null) {
+            Log.d(TAG, "Loading item with ID: $currentItemId")
+            viewModel.loadItemDetails(currentItemId!!, currentUserId)
+        } else {
+            Log.e(TAG, "No item ID provided")
+            showError("Не удалось загрузить объявление: отсутствует ID")
+        }
+    }
+
+    private fun displayItemDetails(item: Item) {
+        binding.contentLayout.visibility = View.VISIBLE
+
+        binding.detailTitle.text = item.title
+        binding.detailDescription.text = item.description
+        binding.detailCategory.text = "Категория: ${item.category}"
+        binding.detailLocation.text = item.location.address
+
+        updateStatusBadge(item.status)
+
+        binding.viewsText.text = formatViews(item.views)
+        binding.timeText.text = formatTime(item.createdAt)
+
+        calculateAndDisplayDistance(item.location)
+
+        loadItemPhotos(item)
+
+        setupMap(item.location)
+    }
+
+    private fun displayOwnerInfo(owner: com.darim.domain.model.User) {
+        binding.sellerName.text = owner.name
+        binding.sellerPhone.text = owner.phone
+        binding.sellerRating.text = String.format("%.1f ★ (%d отзывов)", owner.rating, owner.reviews.size)
+        binding.sellerStats.text = "Отдал: ${owner.itemsGiven} · Получил: ${owner.itemsTaken}"
+    }
+
+    private fun updateBookButton(canBook: Boolean) {
+        if (canBook) {
+            binding.bookButton.isEnabled = true
+            binding.bookButton.text = "Заберу"
+        } else {
+            binding.bookButton.isEnabled = false
+            binding.bookButton.text = when (currentItem?.status) {
+                ItemStatus.AVAILABLE -> "Ваша вещь"
+                ItemStatus.BOOKED -> "Уже забронировано"
+                ItemStatus.COMPLETED -> "Уже забрали"
+                ItemStatus.CANCELLED -> "Отменено"
+                else -> "Недоступно"
+            }
+        }
+    }
+
+    private fun loadItemPhotos(item: Item) {
+        if (item.photos.isEmpty()) {
+            photoAdapter.submitList(listOf(null))
+            binding.tabLayoutDots.visibility = View.GONE
+        } else {
+            val photoUris = item.photos.mapNotNull { photoPath ->
+                PhotoManager.getPhotoUri(requireContext(), photoPath)
+            }
+
+            if (photoUris.isNotEmpty()) {
+                photoAdapter.submitList(photoUris)
+                binding.tabLayoutDots.visibility = if (photoUris.size > 1) View.VISIBLE else View.GONE
+            } else {
+                photoAdapter.submitList(listOf(null))
+                binding.tabLayoutDots.visibility = View.GONE
+            }
+        }
     }
 
     private fun setupMap(location: Location) {
@@ -152,86 +325,7 @@ class DetailFragment : Fragment() {
             )
 
         } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun loadItemData() {
-        val item = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            arguments?.getSerializable("item", Item::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            arguments?.getSerializable("item") as? Item
-        }
-
-        if (item != null) {
-            displayItem(item)
-        } else {
-            Toast.makeText(requireContext(), "Ошибка загрузки объявления", Toast.LENGTH_SHORT).show()
-            parentFragmentManager.popBackStack()
-        }
-    }
-
-    private fun displayItem(item: Item) {
-        currentItem = item
-
-        // Основная информация
-        binding.detailTitle.text = item.title
-        binding.detailDescription.text = item.description
-        binding.detailCategory.text = "Категория: ${item.category}"
-        binding.detailLocation.text = item.location.address
-
-        // Информация о продавце
-        binding.sellerName.text = item.ownerName ?: "Продавец"
-        binding.sellerPhone.text = item.ownerPhone ?: "+7 (999) 123-45-67"
-
-        // Статус вещи
-        updateStatusBadge(item.status)
-
-        // Просмотры и время
-        binding.viewsText.text = formatViews(item.views)
-        binding.timeText.text = formatTime(item.createdAt)
-
-        // Расстояние
-        calculateAndDisplayDistance(item.location)
-
-        // Загружаем фотографии
-        loadItemPhotos(item)
-
-        // Аватар продавца
-        binding.sellerAvatar.setImageResource(R.drawable.ic_default_avatar)
-
-        // Настраиваем карту
-        setupMap(item.location)
-
-        // Обновляем кнопку
-        updateButtonForStatus(item.status)
-
-        // Проверяем, не в избранном ли вещь
-        checkIfFavorite(item.id)
-    }
-
-    private fun loadItemPhotos(item: Item) {
-        if (item.photos.isEmpty()) {
-            // Если нет фото, показываем заглушку
-            val placeholderList = listOf<Uri?>(null)
-            photoAdapter.submitList(placeholderList)
-            binding.tabLayoutDots.visibility = View.GONE
-        } else {
-            // Загружаем все фото через PhotoManager
-            val photoUris = item.photos.mapNotNull { photoPath ->
-                PhotoManager.getPhotoUri(requireContext(), photoPath)
-            }
-
-            if (photoUris.isNotEmpty()) {
-                photoAdapter.submitList(photoUris)
-                binding.tabLayoutDots.visibility = if (photoUris.size > 1) View.VISIBLE else View.GONE
-            } else {
-                // Если фото не найдены, показываем заглушку
-                val placeholderList = listOf<Uri?>(null)
-                photoAdapter.submitList(placeholderList)
-                binding.tabLayoutDots.visibility = View.GONE
-            }
+            Log.e(TAG, "Error setting up map", e)
         }
     }
 
@@ -254,23 +348,6 @@ class DetailFragment : Fragment() {
         binding.statusBadge.setBackgroundColor(resources.getColor(backgroundColor, null))
     }
 
-    private fun updateButtonForStatus(status: ItemStatus) {
-        when {
-            status == ItemStatus.AVAILABLE -> {
-                binding.bookButton.isEnabled = true
-                binding.bookButton.text = "Заберу"
-            }
-            status == ItemStatus.BOOKED && currentItem?.bookedBy == getCurrentUserId() -> {
-                binding.bookButton.isEnabled = true
-                binding.bookButton.text = "Управление"
-            }
-            else -> {
-                binding.bookButton.isEnabled = false
-                binding.bookButton.text = "Уже забрали"
-            }
-        }
-    }
-
     private fun calculateAndDisplayDistance(itemLocation: Location) {
         val userLocation = UserLocationManager.getLastKnownLocation()
 
@@ -280,7 +357,7 @@ class DetailFragment : Fragment() {
                 itemLocation.lat, itemLocation.lng
             )
         } else {
-            1.2 // Заглушка
+            1.2
         }
 
         binding.detailDistance.text = when {
@@ -302,14 +379,8 @@ class DetailFragment : Fragment() {
     }
 
     private fun toggleFavorite() {
-        isFavorite = !isFavorite
-        if (isFavorite) {
-            binding.favoriteButton.setImageResource(android.R.drawable.btn_star_big_on)
-            Toast.makeText(requireContext(), "Добавлено в избранное", Toast.LENGTH_SHORT).show()
-        } else {
-            binding.favoriteButton.setImageResource(android.R.drawable.btn_star_big_off)
-            Toast.makeText(requireContext(), "Удалено из избранного", Toast.LENGTH_SHORT).show()
-        }
+        // TODO: Implement favorites
+        Toast.makeText(requireContext(), "Добавлено в избранное", Toast.LENGTH_SHORT).show()
     }
 
     private fun shareItem() {
@@ -326,74 +397,28 @@ class DetailFragment : Fragment() {
     private fun showBookingConfirmationDialog(item: Item) {
         AlertDialog.Builder(requireContext())
             .setTitle("Подтверждение бронирования")
-            .setMessage("Вы уверены, что хотите забрать эту вещь?")
+            .setMessage("Вы уверены, что хотите забрать эту вещь?\n\nПосле подтверждения вы сможете связаться с владельцем.")
             .setPositiveButton("Да, забрать") { _, _ ->
-                confirmBooking(item)
+                currentUserId?.let { userId ->
+                    viewModel.bookItem(item.id, userId)
+                } ?: run {
+                    Toast.makeText(requireContext(), "Необходимо войти в систему", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Отмена", null)
             .show()
     }
 
-    private fun showManageBookingDialog(item: Item) {
-        val options = arrayOf("Связаться с продавцом", "Отменить бронирование")
-
+    private fun showDeleteConfirmationDialog(item: Item) {
         AlertDialog.Builder(requireContext())
-            .setTitle("Управление бронированием")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showContactDialog(item)
-                    1 -> showCancelBookingDialog(item)
-                }
+            .setTitle("Удаление объявления")
+            .setMessage("Вы уверены, что хотите удалить это объявление?")
+            .setPositiveButton("Удалить") { _, _ ->
+                // TODO: Implement delete
+                Toast.makeText(requireContext(), "Объявление удалено", Toast.LENGTH_SHORT).show()
+                parentFragmentManager.popBackStack()
             }
-            .show()
-    }
-
-    private fun showCancelBookingDialog(item: Item) {
-        AlertDialog.Builder(requireContext())
-            .setTitle("Отмена бронирования")
-            .setMessage("Вы уверены, что хотите отменить бронирование?")
-            .setPositiveButton("Отменить") { _, _ ->
-                cancelBooking(item)
-            }
-            .setNegativeButton("Оставить", null)
-            .show()
-    }
-
-    private fun confirmBooking(item: Item) {
-        val updatedItem = item.copy(status = ItemStatus.BOOKED, bookedBy = getCurrentUserId())
-        currentItem = updatedItem
-
-        val bundle = Bundle().apply {
-            putString("itemId", item.id)
-            putSerializable("newStatus", ItemStatus.BOOKED)
-        }
-        parentFragmentManager.setFragmentResult("itemStatusChanged", bundle)
-
-        updateButtonForStatus(ItemStatus.BOOKED)
-        showContactDialog(item)
-    }
-
-    private fun cancelBooking(item: Item) {
-        Toast.makeText(requireContext(), "Бронирование отменено", Toast.LENGTH_SHORT).show()
-        updateButtonForStatus(ItemStatus.AVAILABLE)
-    }
-
-    private fun showContactDialog(item: Item) {
-        val phoneNumber = item.ownerPhone ?: "+7 (999) 123-45-67"
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Вещь забронирована! 🎉")
-            .setMessage("Продавец: ${item.ownerName ?: "Продавец"}\nТелефон: $phoneNumber")
-            .setPositiveButton("Позвонить") { _, _ ->
-                val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:$phoneNumber")
-                }
-                startActivity(intent)
-            }
-            .setNeutralButton("Скопировать телефон") { _, _ ->
-                copyTextToClipboard(phoneNumber, "Телефон скопирован")
-            }
-            .setNegativeButton("Закрыть", null)
+            .setNegativeButton("Отмена", null)
             .show()
     }
 
@@ -405,15 +430,11 @@ class DetailFragment : Fragment() {
 
     private fun copyPhoneToClipboard() {
         binding.sellerPhone.text.toString().takeIf { it.isNotBlank() }?.let { phone ->
-            copyTextToClipboard(phone, "Телефон скопирован")
+            val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("phone", phone)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(requireContext(), "Телефон скопирован", Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun copyTextToClipboard(text: String, message: String) {
-        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        val clip = ClipData.newPlainText("text", text)
-        clipboard.setPrimaryClip(clip)
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     private fun openInMaps() {
@@ -458,7 +479,7 @@ class DetailFragment : Fragment() {
                 val days = (diff / 86_400_000).toInt()
                 "🕒 $days ${getDaysText(days)} назад"
             }
-            else -> "🕒 ${java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date(timestamp))}"
+            else -> "🕒 ${SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(timestamp))}"
         }
     }
 
@@ -486,13 +507,16 @@ class DetailFragment : Fragment() {
         }
     }
 
-    private fun checkIfFavorite(itemId: String) {
-        isFavorite = false
-        binding.favoriteButton.setImageResource(android.R.drawable.btn_star_big_off)
+    private fun showError(message: String) {
+        binding.errorLayout.visibility = View.VISIBLE
+        binding.contentLayout.visibility = View.GONE
+        binding.errorText.text = message
+        Log.e(TAG, "Error: $message")
     }
 
-    private fun getCurrentUserId(): String {
-        return "user1"
+    private fun hideError() {
+        binding.errorLayout.visibility = View.GONE
+        binding.contentLayout.visibility = View.VISIBLE
     }
 
     override fun onStart() {
@@ -512,7 +536,6 @@ class DetailFragment : Fragment() {
         _binding = null
     }
 
-    // Адаптер для ViewPager с фотографиями
     inner class PhotoPagerAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<PhotoPagerAdapter.PhotoViewHolder>() {
 
         private var photos: List<Uri?> = emptyList()
@@ -535,7 +558,7 @@ class DetailFragment : Fragment() {
         override fun getItemCount() = photos.size
 
         inner class PhotoViewHolder(itemView: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView) {
-            private val imageView: ImageView = itemView.findViewById(R.id.photoImageView)
+            private val imageView: android.widget.ImageView = itemView.findViewById(R.id.photoImageView)
             private val progressBar: View = itemView.findViewById(R.id.progressBar)
 
             fun bind(photoUri: Uri?) {
@@ -551,11 +574,11 @@ class DetailFragment : Fragment() {
             private fun loadFullImage(uri: Uri) {
                 try {
                     requireContext().contentResolver.openInputStream(uri)?.use { stream ->
-                        val bitmap = BitmapFactory.decodeStream(stream)
+                        val bitmap = android.graphics.BitmapFactory.decodeStream(stream)
                         imageView.setImageBitmap(bitmap)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Error loading image", e)
                     imageView.setImageResource(R.drawable.error_image)
                 }
             }
@@ -563,10 +586,10 @@ class DetailFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance(item: Item): DetailFragment {
+        fun newInstance(itemId: String): DetailFragment {
             val fragment = DetailFragment()
             val args = Bundle().apply {
-                putSerializable("item", item)
+                putString("itemId", itemId)
             }
             fragment.arguments = args
             return fragment

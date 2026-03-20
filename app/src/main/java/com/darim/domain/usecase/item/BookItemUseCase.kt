@@ -3,11 +3,11 @@ package com.darim.domain.usecase.item
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
-import com.darim.domain.model.Item
 import com.darim.domain.model.ItemStatus
 import com.darim.domain.repository.ItemRepository
 import com.darim.domain.repository.TransferRepository
 import com.darim.domain.repository.UserRepository
+import com.darim.ui.utils.SessionManager
 import kotlinx.coroutines.Dispatchers
 
 class BookItemUseCase(
@@ -25,9 +25,10 @@ class BookItemUseCase(
             ITEM_NOT_FOUND,
             ITEM_NOT_AVAILABLE,
             ITEM_ALREADY_BOOKED,
-            OWNER_CANNOT_BOOK,      // ← новый код ошибки
+            OWNER_CANNOT_BOOK,
             USER_NOT_FOUND,
-            BOOKING_FAILED
+            BOOKING_FAILED,
+            GUEST_CANNOT_BOOK
         }
     }
 
@@ -36,7 +37,15 @@ class BookItemUseCase(
             emit(BookingResult.Loading)
 
             try {
-                // 1. Проверяем существование вещи
+                // Проверяем, не гость ли пользователь
+                if (SessionManager.isGuest()) {
+                    emit(BookingResult.Error(
+                        "Гости не могут бронировать вещи. Зарегистрируйтесь!",
+                        BookingResult.ErrorCode.GUEST_CANNOT_BOOK
+                    ))
+                    return@liveData
+                }
+
                 val item = itemRepository.getItemById(itemId)
                 if (item == null) {
                     emit(BookingResult.Error(
@@ -46,7 +55,6 @@ class BookItemUseCase(
                     return@liveData
                 }
 
-                // 2. Проверяем, что пользователь не является владельцем
                 if (item.ownerId == userId) {
                     emit(BookingResult.Error(
                         "Вы не можете забронировать свою собственную вещь",
@@ -55,7 +63,6 @@ class BookItemUseCase(
                     return@liveData
                 }
 
-                // 3. Проверяем статус вещи
                 if (!validateItemStatus(item)) {
                     emit(BookingResult.Error(
                         "Вещь недоступна для бронирования",
@@ -64,7 +71,6 @@ class BookItemUseCase(
                     return@liveData
                 }
 
-                // 4. Проверяем существование пользователя
                 val user = userRepository.getUser(userId)
                 if (user == null) {
                     emit(BookingResult.Error(
@@ -74,7 +80,6 @@ class BookItemUseCase(
                     return@liveData
                 }
 
-                // 5. Бронируем вещь
                 val result = itemRepository.updateItemStatus(itemId, ItemStatus.BOOKED, userId)
 
                 if (result.isSuccess && result.getOrNull() == true) {
@@ -95,12 +100,17 @@ class BookItemUseCase(
         }
     }
 
-    private fun validateItemStatus(item: Item): Boolean {
+    private fun validateItemStatus(item: com.darim.domain.model.Item): Boolean {
         return item.status == ItemStatus.AVAILABLE
     }
 
     fun checkIfCanBook(itemId: String, userId: String): LiveData<Boolean> {
         return liveData(Dispatchers.IO) {
+            if (SessionManager.isGuest()) {
+                emit(false)
+                return@liveData
+            }
+
             val item = itemRepository.getItemById(itemId)
             val canBook = item != null &&
                     item.status == ItemStatus.AVAILABLE &&

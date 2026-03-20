@@ -11,4 +11,8 @@ interface UserRepository {
     suspend fun updateRating(userId: String, newRating: Int): Result<Unit>
 
     suspend fun addReview(review: Review): Result<Unit>
+
+    suspend fun getAllUsers(): List<User>
+
+    suspend fun findUserByPhone(phone: String): User?
 }

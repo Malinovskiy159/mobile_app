@@ -1,4 +1,3 @@
-// ui/viewmodel/PublishViewModel.kt
 package com.darim.ui.publish
 
 import android.net.Uri
@@ -13,7 +12,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 class PublishViewModel(
-    private val publishItemUseCase: PublishItemUseCase  // ← передаем в конструкторе
+    private val publishItemUseCase: PublishItemUseCase  // ← обязательный параметр
 ) : ViewModel() {
 
     sealed class PublishUiState {

@@ -1,4 +1,4 @@
-// ui/detail/DetailViewModel.kt
+// ui/viewmodel/DetailViewModel.kt
 package com.darim.ui.detail
 
 import androidx.lifecycle.LiveData
@@ -22,9 +22,6 @@ class DetailViewModel(
     private val _owner = MutableLiveData<User?>()
     val owner: LiveData<User?> = _owner
 
-    private val _similarItems = MutableLiveData<List<Item>>(emptyList())
-    val similarItems: LiveData<List<Item>> = _similarItems
-
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
@@ -45,17 +42,16 @@ class DetailViewModel(
         data class Error(val message: String) : BookingResult()
     }
 
+    // ДОБАВЛЯЕМ ЭТОТ МЕТОД
     fun loadItemDetails(itemId: String, currentUserId: String?) {
         viewModelScope.launch {
             _isLoading.value = true
 
-            // Используем observe вместо collect
             getItemDetailsUseCase.execute(itemId, currentUserId).observeForever { result ->
                 when (result) {
                     is GetItemDetailsUseCase.DetailResult.Success -> {
                         _item.value = result.item
                         _owner.value = result.owner
-                        _similarItems.value = result.similarItems
                         _canBook.value = result.canBook
                         _isOwner.value = result.isOwner
                         _error.value = null

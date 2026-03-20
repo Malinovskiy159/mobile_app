@@ -14,7 +14,7 @@
         android:background="@color/purple_500"
         app:navigationIcon="@android:drawable/ic_menu_revert"
         app:title="Новое объявление"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@android:color/black" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -72,18 +72,10 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="Выбрать фото"
+                    android:layout_marginStart="38dp"
+                    android:layout_marginEnd="48dp"
+                    android:text="Добавить фото"
                     app:icon="@android:drawable/ic_menu_gallery" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonTakePhoto"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Снять фото"
-                    app:icon="@android:drawable/ic_menu_camera" />
 
             </LinearLayout>
 
@@ -101,7 +93,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Название вещи"
                     android:maxLines="2"
-                    android:padding="16dp" />
+                    android:padding="16dp"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -112,7 +105,8 @@
                 android:layout_marginBottom="8dp"
                 android:text="Категория"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textColor="@color/black"/>
 
             <Spinner
                 android:id="@+id/spinnerCategory"
@@ -120,7 +114,8 @@
                 android:layout_height="48dp"
                 android:layout_marginBottom="16dp"
                 android:background="@drawable/bg_spinner"
-                android:paddingHorizontal="12dp" />
+                android:paddingHorizontal="12dp"
+                android:textColor="@color/black"/>
 
             <!-- Описание -->
             <com.google.android.material.textfield.TextInputLayout
@@ -136,7 +131,8 @@
                     android:layout_height="120dp"
                     android:gravity="top"
                     android:hint="Описание вещи"
-                    android:padding="16dp" />
+                    android:padding="16dp"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
