@@ -1,4 +1,3 @@
-// ui/profile/ProfileFragment.kt
 package com.darim.ui.profile
 
 import android.content.Intent
@@ -10,18 +9,16 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.darim.R
 import com.darim.databinding.FragmentProfileBinding
 import com.darim.domain.model.Review
 import com.darim.domain.model.User
 import com.darim.ui.MainActivity
-import com.darim.ui.profile.LoginFragment
+import com.darim.ui.list.ListFragment // ДОБАВЛЕННЫЙ ИМПОРТ
 import com.darim.ui.myitems.MyItemsFragment
 import com.darim.ui.utils.SessionManager
-import com.darim.ui.profile.ProfileViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText // ДОБАВЛЕННЫЙ ИМПОРТ
 
 class ProfileFragment : Fragment() {
 
@@ -46,20 +43,17 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Проверяем, залогинен ли пользователь
         if (!SessionManager.isLoggedIn()) {
             navigateToLogin()
             return
         }
 
-        // Получаем текущего пользователя из сессии
         currentUser = SessionManager.getCurrentUser()
 
         setupToolbar()
         setupListeners()
         setupObservers()
 
-        // Загружаем данные профиля текущего пользователя
         currentUser?.id?.let { userId ->
             viewModel.loadUserProfile(userId)
         }
@@ -88,8 +82,6 @@ class ProfileFragment : Fragment() {
             }
         }
     }
-
-
 
     private fun setupListeners() {
         binding.buttonEditProfile.setOnClickListener {
@@ -121,7 +113,7 @@ class ProfileFragment : Fragment() {
         }
 
         binding.menuFavorites.setOnClickListener {
-            showComingSoon("Избранное")
+            navigateToFavorites()
         }
 
         binding.menuLogout.setOnClickListener {
@@ -130,35 +122,24 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        // Наблюдаем за данными пользователя
         viewModel.user.observe(viewLifecycleOwner) { user ->
             user?.let {
                 displayUserInfo(it)
                 currentUser = it
-                // Обновляем сессию, если данные изменились
                 SessionManager.saveCurrentUser(it)
             }
         }
 
-        // Наблюдаем за статистикой
         viewModel.userStats.observe(viewLifecycleOwner) { stats ->
             stats?.let {
                 displayUserStats(it)
             }
         }
 
-        // Наблюдаем за отзывами
-        /*viewModel.reviews.observe(viewLifecycleOwner) { reviews ->
-            reviewsAdapter.submitList(reviews)
-            updateReviewsCount(reviews.size)
-        }*/
-
-        // Наблюдаем за состоянием загрузки
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
-        // Наблюдаем за ошибками
         viewModel.error.observe(viewLifecycleOwner) { error ->
             error?.let {
                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
@@ -172,28 +153,20 @@ class ProfileFragment : Fragment() {
         binding.userEmail.text = generateEmailFromName(user.name)
         binding.userPhone.text = user.phone
 
-        // Рейтинг
         binding.ratingBar.rating = user.rating
         binding.ratingText.text = String.format("%.1f ★ (%d отзывов)", user.rating, user.reviews.size)
 
-        // Аватар (заглушка)
         binding.avatarImage.setImageResource(R.drawable.ic_default_avatar)
 
-        // Базовая статистика
         binding.statsGiven.text = user.itemsGiven.toString()
         binding.statsTaken.text = user.itemsTaken.toString()
         binding.statsRating.text = String.format("%.1f", user.rating)
     }
 
     private fun displayUserStats(stats: com.darim.domain.usecase.user.GetUserProfileUseCase.UserStats) {
-        // Обновляем расширенную статистику
         binding.statsGiven.text = stats.itemsGiven.toString()
         binding.statsTaken.text = stats.itemsTaken.toString()
         binding.statsRating.text = String.format("%.1f", stats.rating)
-    }
-
-    private fun updateReviewsCount(count: Int) {
-        binding.tabLayout.getTabAt(1)?.text = "Отзывы ($count)"
     }
 
     private fun generateEmailFromName(name: String): String {
@@ -203,10 +176,11 @@ class ProfileFragment : Fragment() {
 
     private fun showEditProfileDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
-        val editName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editName)
-        val editPhone = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.editPhone)
 
-        // Заполняем текущими данными
+        // Явно указываем типы переменных, чтобы избежать ошибок вывода типов (Inference errors)
+        val editName: TextInputEditText = dialogView.findViewById(R.id.editName)
+        val editPhone: TextInputEditText = dialogView.findViewById(R.id.editPhone)
+
         editName.setText(currentUser?.name)
         editPhone.setText(currentUser?.phone)
 
@@ -297,13 +271,8 @@ class ProfileFragment : Fragment() {
     }
 
     private fun performLogout() {
-        // Очищаем сессию
         SessionManager.clearSession()
-
-        // Показываем сообщение
         Toast.makeText(requireContext(), "Вы вышли из аккаунта", Toast.LENGTH_SHORT).show()
-
-        // Перенаправляем на экран логина
         navigateToLogin()
     }
 
@@ -333,25 +302,6 @@ class ProfileFragment : Fragment() {
             .show()
     }
 
-    private fun showReviewDetails(review: Review) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Отзыв")
-            .setMessage("""
-                ⭐ Оценка: ${review.rating}/5
-                
-                📝 Комментарий:
-                ${review.comment}
-                
-                📅 Дата: ${java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date(review.date))}
-            """.trimIndent())
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun showComingSoon(feature: String) {
-        Toast.makeText(requireContext(), "$feature — скоро появится!", Toast.LENGTH_SHORT).show()
-    }
-
     private fun navigateToMyItems() {
         parentFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, MyItemsFragment())
@@ -361,6 +311,18 @@ class ProfileFragment : Fragment() {
 
     private fun navigateToMyBookings() {
         val fragment = MyItemsFragment()
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
+    private fun navigateToFavorites() {
+        val fragment = ListFragment().apply {
+            arguments = Bundle().apply {
+                putBoolean("showOnlyFavorites", true)
+            }
+        }
         parentFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)

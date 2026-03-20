@@ -235,10 +235,12 @@
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:src="@drawable/ic_empty"
-                    android:tint="@color/text_hint"
+                    app:tint="@color/text_hint"
                     android:alpha="0.6" />
 
+                <!-- ДОБАВЬ ID: emptyViewTitle -->
                 <TextView
+                    android:id="@+id/emptyViewTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
@@ -246,7 +248,9 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="16sp" />
 
+                <!-- ДОБАВЬ ID: emptyViewSubtitle -->
                 <TextView
+                    android:id="@+id/emptyViewSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"

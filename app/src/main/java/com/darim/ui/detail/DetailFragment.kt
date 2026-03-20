@@ -2,6 +2,7 @@
 package com.darim.ui.detail
 
 import android.content.ClipData
+import com.darim.ui.utils.FavoritesManager
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -55,6 +56,7 @@ class DetailFragment : Fragment() {
     private var currentItem: Item? = null
     private var currentItemId: String? = null
     private var currentUserId: String? = null
+    private var isFavorite = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -71,6 +73,7 @@ class DetailFragment : Fragment() {
         // Инициализация
         MapKitFactory.initialize(requireContext())
         currentUserId = SessionManager.getCurrentUserId()
+
 
         initViews()
         setupViewPager()
@@ -379,8 +382,13 @@ class DetailFragment : Fragment() {
     }
 
     private fun toggleFavorite() {
-        // TODO: Implement favorites
-        Toast.makeText(requireContext(), "Добавлено в избранное", Toast.LENGTH_SHORT).show()
+        currentItem?.let { item ->
+            FavoritesManager.toggleFavorite(requireContext(), item.id)
+            isFavorite = FavoritesManager.isFavorite(requireContext(), item.id)  // ← теперь должно работать
+
+            val message = if (isFavorite) "Добавлено в избранное" else "Удалено"
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun shareItem() {
@@ -393,6 +401,10 @@ class DetailFragment : Fragment() {
             startActivity(Intent.createChooser(shareIntent, "Поделиться через"))
         }
     }
+    private fun checkIfFavorite(itemId: String) {
+        isFavorite = FavoritesManager.isFavorite(requireContext(), itemId)  // ← и здесь должно работать
+    }
+
 
     private fun showBookingConfirmationDialog(item: Item) {
         AlertDialog.Builder(requireContext())

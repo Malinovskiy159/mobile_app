@@ -12,6 +12,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.darim.ui.utils.FavoritesManager
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -79,37 +80,40 @@ class ListFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        // Наблюдаем за отфильтрованными вещами
         viewModel.filteredItems.observe(viewLifecycleOwner) { items ->
-            adapter.updateItems(items)
-            updateEmptyState(items.isEmpty())
+            val showOnlyFavorites = arguments?.getBoolean("showOnlyFavorites", false) ?: false
+
+            val finalItems = if (showOnlyFavorites) {
+                val favIds = FavoritesManager.getFavoriteIds(requireContext())
+                items.filter { it.id in favIds }
+            } else {
+                items
+            }
+
+            adapter.updateItems(finalItems)
+            updateEmptyState(finalItems.isEmpty(), showOnlyFavorites)
         }
 
-        // Наблюдаем за поисковым запросом
         viewModel.searchQuery.observe(viewLifecycleOwner) { query ->
             if (binding.searchView.query.toString() != query) {
                 binding.searchView.setQuery(query, false)
             }
         }
 
-        // Наблюдаем за выбранными категориями
         viewModel.selectedCategories.observe(viewLifecycleOwner) { categories ->
             updateChipSelection(categories)
         }
 
-        // Наблюдаем за радиусом
         viewModel.radius.observe(viewLifecycleOwner) { radius ->
             binding.radiusSeekBar.progress = radius.toInt()
             binding.radiusText.text = "$radius км"
         }
 
-        // Наблюдаем за чекбоксом "Весь город"
         viewModel.isWholeCity.observe(viewLifecycleOwner) { isChecked ->
             binding.wholeCityCheckBox.isChecked = isChecked
             binding.radiusContainer.visibility = if (isChecked) View.GONE else View.VISIBLE
         }
 
-        // Наблюдаем за типом сортировки
         viewModel.sortType.observe(viewLifecycleOwner) { sortType ->
             when (sortType) {
                 "distance" -> binding.sortRadioGroup.check(R.id.sortByDistance)
@@ -117,12 +121,10 @@ class ListFragment : Fragment() {
             }
         }
 
-        // Наблюдаем за состоянием загрузки
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             binding.swipeRefresh.isRefreshing = isLoading
         }
 
-        // Наблюдаем за ошибками
         viewModel.error.observe(viewLifecycleOwner) { error ->
             error?.let {
                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
@@ -256,9 +258,20 @@ class ListFragment : Fragment() {
             .commit()
     }
 
-    private fun updateEmptyState(isEmpty: Boolean) {
+    private fun updateEmptyState(isEmpty: Boolean, isFavoriteMode: Boolean = false) {
         binding.emptyView.visibility = if (isEmpty) View.VISIBLE else View.GONE
         binding.recyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
+
+        if (isEmpty) {
+            if (isFavoriteMode) {
+                // Обращаемся к новым ID
+                binding.emptyViewTitle.text = "В избранном пока ничего нет"
+                binding.emptyViewSubtitle.text = "Нажимайте на звездочку в объявлениях, чтобы сохранить их"
+            } else {
+                binding.emptyViewTitle.text = "Ничего не найдено"
+                binding.emptyViewSubtitle.text = "Попробуйте изменить параметры поиска"
+            }
+        }
     }
 
     private fun checkLocationPermission() {
