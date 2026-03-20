@@ -28,12 +28,12 @@ class ViewModelFactory(private val application: MyApplication) : ViewModelProvid
             }
 
             // List
-            /*modelClass.isAssignableFrom(ListViewModel::class.java) -> {
+            modelClass.isAssignableFrom(ListViewModel::class.java) -> {
                 ListViewModel(
                     application.getItemsUseCase,
                     application.getUserLocationUseCase
                 ) as T
-            }*/
+            }
 
             // Detail
             modelClass.isAssignableFrom(DetailViewModel::class.java) -> {

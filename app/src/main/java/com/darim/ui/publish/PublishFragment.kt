@@ -351,7 +351,7 @@ class PublishFragment : Fragment() {
         // Получаем текущего пользователя из сессии
         val currentUser = SessionManager.getCurrentUser()
 
-        /*viewModel.publishItem(
+        viewModel.publishItem(
             title = title,
             category = category,
             description = description,
@@ -361,9 +361,9 @@ class PublishFragment : Fragment() {
             ownerPhone = currentUser?.phone ?: "+7 (999) 000-00-00",
             photoUris = selectedImageUris,
             photoFiles = selectedImageFiles
-        )*/
+        )
 
-        viewModel.publishItem(
+        /*viewModel.publishItem(
             title = title,
             category = category,
             description = description,
@@ -373,7 +373,7 @@ class PublishFragment : Fragment() {
             ownerPhone = "+7 (999) 123-45-67",
             photoUris = selectedImageUris,
             photoFiles = selectedImageFiles
-        )
+        )*/
     }
 
     private fun observePublishResult() {

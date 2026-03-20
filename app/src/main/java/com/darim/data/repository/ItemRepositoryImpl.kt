@@ -131,12 +131,13 @@ class ItemRepositoryImpl(private val context: Context) : ItemRepository {
                 createdAt = System.currentTimeMillis(),
                 views = 0
             )
-            items.add(0, newItem)
+            items.add(0, newItem) // Добавляем в начало списка
 
             // Сохраняем ID вещи в SessionManager для владельца
             SessionManager.saveMyItem(newItem.id)
 
             saveItemsToJson()
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

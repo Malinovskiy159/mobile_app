@@ -17,7 +17,6 @@ import com.darim.databinding.FragmentProfileBinding
 import com.darim.domain.model.Review
 import com.darim.domain.model.User
 import com.darim.ui.MainActivity
-import com.darim.ui.myitems.MyBookingsAdapter
 import com.darim.ui.profile.LoginFragment
 import com.darim.ui.myitems.MyItemsFragment
 import com.darim.ui.utils.SessionManager
@@ -363,7 +362,7 @@ class ProfileFragment : Fragment() {
     private fun navigateToMyBookings() {
         val fragment = MyItemsFragment()
         parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, MyBookingsAdapter())
+            .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()
     }
