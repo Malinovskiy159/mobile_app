@@ -153,10 +153,6 @@ class PublishFragment : Fragment() {
             checkPermissionsAndShowDialog()
         }
 
-        binding.buttonTakePhoto.setOnClickListener {
-            checkPermissionsAndShowDialog()
-        }
-
         binding.buttonPublish.setOnClickListener {
             validateAndPublish()
         }
