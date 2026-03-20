@@ -31,7 +31,8 @@
                 android:gravity="center"
                 android:text="Регистрация"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textColor="@color/black"/>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
@@ -45,7 +46,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Имя"
                     android:inputType="textPersonName"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -61,7 +63,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Номер телефона"
                     android:inputType="phone"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -78,7 +81,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Пароль"
                     android:inputType="textPassword"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -95,7 +99,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Подтвердите пароль"
                     android:inputType="textPassword"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -110,7 +115,8 @@
                     android:layout_height="56dp"
                     android:text="Зарегистрироваться"
                     android:textSize="16sp"
-                    app:cornerRadius="8dp" />
+                    app:cornerRadius="8dp"
+                    android:textColor="@color/black"/>
 
                 <ProgressBar
                     android:id="@+id/progressBar"
@@ -127,7 +133,8 @@
                 android:layout_height="wrap_content"
                 android:text="Вернуться ко входу"
                 style="@style/Widget.Material3.Button.TextButton"
-                app:cornerRadius="8dp" />
+                app:cornerRadius="8dp"
+                android:textColor="@color/black"/>
 
         </LinearLayout>
 

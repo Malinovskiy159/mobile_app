@@ -31,7 +31,8 @@
                 android:gravity="center"
                 android:text="Добро пожаловать!"
                 android:textSize="24sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textColor="@color/black"/>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
@@ -45,7 +46,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Номер телефона"
                     android:inputType="phone"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -62,7 +64,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Пароль"
                     android:inputType="textPassword"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:textColor="@color/black"/>
 
             </com.google.android.material.textfield.TextInputLayout>
 

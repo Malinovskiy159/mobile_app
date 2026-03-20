@@ -51,7 +51,7 @@ dependencies {
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("com.google.android.material:material:1.11.0")
-    implementation("com.google.android.material:material:1.11.0")
+    implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.0")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.6.0")

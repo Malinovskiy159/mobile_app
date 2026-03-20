@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
-    app:cardCornerRadius="8dp"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true">
 
@@ -16,7 +16,7 @@
         <!-- Изображение со статусом -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="120dp">
+            android:layout_height="160dp">
 
             <ImageView
                 android:id="@+id/itemImage"
@@ -24,7 +24,7 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 android:src="@drawable/placeholder_image"
-                android:background="#E0E0E0" />
+                android:background="@color/extra_light_gray" />
 
             <!-- Бейдж статуса -->
             <TextView
@@ -32,14 +32,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|start"
-                android:layout_margin="6dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
+                android:layout_margin="12dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
                 android:text="Доступно"
-                android:textColor="@android:color/white"
-                android:textSize="10sp"
+                android:textColor="@color/black"
+                android:textSize="11sp"
                 android:textStyle="bold"
-                android:background="#4CAF50" />
+                android:background="@drawable/bg_status_badge" />
 
             <!-- Бейдж количества фото -->
             <TextView
@@ -47,14 +47,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
-                android:layout_margin="6dp"
-                android:paddingHorizontal="6dp"
-                android:paddingVertical="2dp"
+                android:layout_margin="12dp"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
                 android:text="3 фото"
-                android:textColor="@android:color/white"
-                android:textSize="10sp"
+                android:textColor="@color/background"
+                android:textSize="11sp"
                 android:textStyle="bold"
-                android:background="#80000000"
+                android:background="@drawable/bg_photo_badge"
                 android:visibility="gone" />
 
         </FrameLayout>
@@ -64,7 +64,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:background="@color/background"
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/itemTitle"
@@ -73,27 +74,37 @@
                 android:maxLines="2"
                 android:ellipsize="end"
                 android:text="Название вещи"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/itemCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="4dp"
                 android:text="Категория"
-                android:textColor="#666666"
-                android:textSize="11sp" />
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
 
-            <TextView
-                android:id="@+id/itemDistance"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="📍 1.2 км"
-                android:textColor="@color/purple_500"
-                android:textSize="11sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <TextView
+                    android:id="@+id/itemDistance"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="📍 1.2 км"
+                    android:textColor="@color/purple_500"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
