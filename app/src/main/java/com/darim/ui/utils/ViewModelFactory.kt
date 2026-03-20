@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.darim.MyApplication
 import com.darim.ui.detail.DetailViewModel
 import com.darim.ui.list.ListViewModel
+import com.darim.ui.map.MapViewModel
 import com.darim.ui.myitems.MyItemsViewModel
 /*import com.darim.ui.myitems.MyItemsViewModel*/
 /*import com.darim.ui.profile.ProfileViewModel*/
@@ -14,6 +15,7 @@ import com.darim.ui.profile.LoginViewModel
 import com.darim.ui.profile.ProfileViewModel
 import com.darim.ui.profile.RegisterViewModel
 import com.darim.ui.publish.PublishViewModel
+import com.darim.ui.transfer.TransferViewModel
 
 class ViewModelFactory(private val application: MyApplication) : ViewModelProvider.Factory {
 
@@ -44,20 +46,18 @@ class ViewModelFactory(private val application: MyApplication) : ViewModelProvid
             }
 
             // Map
-            /*modelClass.isAssignableFrom(MapViewModel::class.java) -> {
+            modelClass.isAssignableFrom(MapViewModel::class.java) -> {
                 MapViewModel(
                     application.getItemsUseCase,
-                    application.getUserLocationUseCase,
-                    application.getNearbyItemsUseCase
+                    application.getUserLocationUseCase
                 ) as T
-            }*/
+            }
 
             // MyItems
             modelClass.isAssignableFrom(MyItemsViewModel::class.java) -> {
                 MyItemsViewModel(
                     application.getMyItemsUseCase,
-                    application.getMyBookingsUseCase,
-//                    application.getNearbyItemsUseCase
+                    application.getMyBookingsUseCase
                 ) as T
             }
 
@@ -76,14 +76,14 @@ class ViewModelFactory(private val application: MyApplication) : ViewModelProvid
             }
 
             // Transfer
-            /*modelClass.isAssignableFrom(TransferViewModel::class.java) -> {
+            modelClass.isAssignableFrom(TransferViewModel::class.java) -> {
                 TransferViewModel(
                     application.scheduleTransferUseCase,
                     application.completeTransferUseCase,
                     application.markUserNoShowUseCase,
                     application.cancelTransferUseCase
                 ) as T
-            }*/
+            }
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

@@ -165,7 +165,10 @@ class GetMyBookingsUseCase(
         }
     }
 
-    // ИСПРАВЛЕННЫЙ МЕТОД getBookingStats
+    suspend fun getTransferForBooking(bookingId: String): Transfer? {
+        return transferRepository.getTransfer(bookingId)
+    }
+
     fun getBookingStats(userId: String): LiveData<BookingStats> {
         return liveData(Dispatchers.IO) {
             try {

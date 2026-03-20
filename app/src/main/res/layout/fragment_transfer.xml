@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
@@ -15,6 +16,13 @@
         app:navigationIcon="@android:drawable/ic_menu_revert"
         app:title="Управление встречей"
         app:titleTextColor="@android:color/white" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -37,7 +45,8 @@
                 android:text="Встреча назначена"
                 android:textColor="@android:color/white"
                 android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="Встреча назначена" />
 
             <!-- Название вещи -->
             <TextView
@@ -47,7 +56,8 @@
                 android:layout_marginBottom="16dp"
                 android:text="Кухонный комбайн Braun"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="Кухонный комбайн Braun" />
 
             <!-- Время встречи -->
             <LinearLayout
@@ -83,7 +93,8 @@
                         android:layout_height="wrap_content"
                         android:text="завтра в 15:00"
                         android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="завтра в 15:00" />
 
                 </LinearLayout>
 
@@ -124,13 +135,14 @@
                         android:text="м. Охотный ряд, у входа"
                         android:textColor="@color/purple_500"
                         android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        tools:text="м. Охотный ряд, у входа" />
 
                 </LinearLayout>
 
             </LinearLayout>
 
-            <!-- Кто отдает -->
+            <!-- Участники -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -139,6 +151,7 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- Отдающий -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -153,7 +166,8 @@
                     android:layout_height="wrap_content"
                     android:text="Иван Петров"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Иван Петров (Отдает)" />
 
                 <TextView
                     android:id="@+id/textGiverPhone"
@@ -161,11 +175,12 @@
                     android:layout_height="wrap_content"
                     android:text="+7 (999) 123-45-67"
                     android:textColor="@color/purple_500"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    tools:text="+7 (999) 123-45-67" />
 
             </LinearLayout>
 
-            <!-- Кто забирает -->
+            <!-- Забирающий -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -180,7 +195,8 @@
                     android:layout_height="wrap_content"
                     android:text="Мария Иванова"
                     android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Мария Иванова (Забирает)" />
 
                 <TextView
                     android:id="@+id/textTakerPhone"
@@ -188,7 +204,8 @@
                     android:layout_height="wrap_content"
                     android:text="+7 (999) 234-56-78"
                     android:textColor="@color/purple_500"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    tools:text="+7 (999) 234-56-78" />
 
             </LinearLayout>
 
@@ -262,7 +279,8 @@
                 android:layout_marginTop="16dp"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:visibility="gone">
+                android:visibility="gone"
+                tools:visibility="visible">
 
                 <TextView
                     android:id="@+id/textCompletedMessage"
@@ -271,7 +289,8 @@
                     android:text="Встреча успешно завершена"
                     android:textColor="#4CAF50"
                     android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    tools:text="Встреча успешно завершена" />
 
             </LinearLayout>
 
