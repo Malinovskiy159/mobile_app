@@ -39,6 +39,7 @@ import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.mapview.MapView
 import com.yandex.runtime.image.ImageProvider
 import kotlinx.coroutines.launch
+import java.util.concurrent.CopyOnWriteArrayList
 
 class MapFragment : Fragment() {
 
@@ -47,7 +48,7 @@ class MapFragment : Fragment() {
     private val TAG = "MapFragment"
 
     private lateinit var mapView: MapView
-    private lateinit var mapObjects: MapObjectCollection
+    private var mapObjects: MapObjectCollection? = null
     private val markers = mutableMapOf<String, PlacemarkMapObject>()
 
     private val mapViewModel: MapViewModel by viewModels {
@@ -71,6 +72,7 @@ class MapFragment : Fragment() {
         MapKitFactory.initialize(requireContext())
 
         mapView = binding.mapView
+        // Создаем новую коллекцию объектов
         mapObjects = mapView.map.mapObjects.addCollection()
 
         setupMap()
@@ -138,6 +140,7 @@ class MapFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 // Наблюдаем за отфильтрованными вещами
                 mapViewModel.filteredItems.observeForever { items ->
+                    Log.d(TAG, "filteredItems changed: ${items.size} items")
                     updateMarkers(items)
                     updateItemCount(items.size)
                 }
@@ -147,7 +150,7 @@ class MapFragment : Fragment() {
         // Наблюдаем за выбранным маркером
         mapViewModel.selectedItemId.observe(viewLifecycleOwner) { itemId ->
             itemId?.let {
-                val item = mapViewModel.filteredItems.value?.find { it.id == itemId }
+                val item = mapViewModel.filteredItems.value?.find { item -> item.id == it }
                 item?.let {
                     showItemInfo(it)
                 }
@@ -211,60 +214,78 @@ class MapFragment : Fragment() {
     }
 
     private fun updateMarkers(items: List<Item>) {
-        // Очищаем старые маркеры
-        markers.values.forEach { mapObjects.remove(it) }
-        markers.clear()
-
-        if (items.isEmpty()) {
-            binding.textNoItems.visibility = View.VISIBLE
-            return
-        }
-
-        binding.textNoItems.visibility = View.GONE
-
-        // Цвета для разных категорий
-        val categoryColors = mapOf(
-            "Техника" to "#6200EE",
-            "Книги" to "#FF9800",
-            "Одежда" to "#2196F3",
-            "Мебель" to "#4CAF50",
-            "Детские товары" to "#FF4081",
-            "Спорт" to "#00BCD4",
-            "Инструменты" to "#795548",
-            "Освещение" to "#FFC107",
-            "Другое" to "#9E9E9E"
-        )
-
-        items.forEach { item ->
-            val point = Point(item.location.lat, item.location.lng)
-            val color = categoryColors[item.category] ?: "#6200EE"
-
-            try {
-                // Создаем маркер с цветом категории
-                val markerImage = createColoredMarker(color)
-                val marker = mapObjects.addPlacemark(
-                    point,
-                    markerImage,
-                    IconStyle().apply {
-                        scale = 0.5f
-                        zIndex = 0f
-                    }
-                )
-
-                marker.userData = item
-                markers[item.id] = marker
-
-                marker.addTapListener { mapObject, point ->
-                    val clickedItem = mapObject.userData as? Item
-                    clickedItem?.let {
-                        mapViewModel.onMarkerClick(it.id)
-                    }
-                    true
-                }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Error adding marker for ${item.title}: ${e.message}")
+        try {
+            // Безопасно очищаем старые маркеры
+            val currentMapObjects = mapObjects
+            if (currentMapObjects == null) {
+                Log.e(TAG, "mapObjects is null")
+                return
             }
+
+            // Удаляем маркеры из коллекции
+            markers.values.forEach { marker ->
+                try {
+                    currentMapObjects.remove(marker)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error removing marker: ${e.message}")
+                }
+            }
+            markers.clear()
+
+            if (items.isEmpty()) {
+                binding.textNoItems.visibility = View.VISIBLE
+                return
+            }
+
+            binding.textNoItems.visibility = View.GONE
+
+            // Цвета для разных категорий
+            val categoryColors = mapOf(
+                "Техника" to "#6200EE",
+                "Книги" to "#FF9800",
+                "Одежда" to "#2196F3",
+                "Мебель" to "#4CAF50",
+                "Детские товары" to "#FF4081",
+                "Спорт" to "#00BCD4",
+                "Инструменты" to "#795548",
+                "Освещение" to "#FFC107",
+                "Другое" to "#9E9E9E"
+            )
+
+            items.forEach { item ->
+                try {
+                    val point = Point(item.location.lat, item.location.lng)
+                    val color = categoryColors[item.category] ?: "#6200EE"
+
+                    // Создаем маркер с цветом категории
+                    val markerImage = createColoredMarker(color)
+                    val marker = currentMapObjects.addPlacemark(
+                        point,
+                        markerImage,
+                        IconStyle().apply {
+                            scale = 0.5f
+                            zIndex = 0f
+                        }
+                    )
+
+                    marker.userData = item
+                    markers[item.id] = marker
+
+                    marker.addTapListener { mapObject, point ->
+                        val clickedItem = mapObject.userData as? Item
+                        clickedItem?.let {
+                            mapViewModel.onMarkerClick(it.id)
+                        }
+                        true
+                    }
+
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error adding marker for ${item.title}: ${e.message}")
+                }
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in updateMarkers: ${e.message}", e)
         }
     }
 
@@ -288,6 +309,7 @@ class MapFragment : Fragment() {
                 ImageProvider.fromResource(requireContext(), R.drawable.ic_marker_default)
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error creating colored marker", e)
             ImageProvider.fromResource(requireContext(), R.drawable.ic_marker_default)
         }
     }
@@ -377,7 +399,6 @@ class MapFragment : Fragment() {
     private fun checkLocationPermission() {
         when {
             ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
-                // Разрешение есть, получаем локацию через ViewModel
                 mapViewModel.loadUserLocation()
             }
             shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
@@ -432,6 +453,14 @@ class MapFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Очищаем маркеры перед уничтожением
+        try {
+            mapObjects?.clear()
+            mapObjects = null
+            markers.clear()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing markers", e)
+        }
         _binding = null
     }
 
